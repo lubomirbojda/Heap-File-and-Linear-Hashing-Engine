@@ -1,18 +1,35 @@
-﻿namespace AUS2_S2.HeapFile.DataClasses;
+namespace AUS2_S2.HeapFile.DataClasses;
 
 public class Person : IData<Person>
 {
-    public string FirstName { get; private set; } = new string()
-    public string LastName { get; private set; }
-    public DateOnly BirthDate { get; private set; }
-    public string Id { get; private set; }
+    public const int FIRST_NAME_MAX_CHARS = 15;
+    public const int LAST_NAME_MAX_CHARS = 15;
+    public const int ID_MAX_CHARS = 15;
+
+    private string firstName;
+    private string lastName;
+    private DateOnly birthDate;
+    private string id;
+
+    private int firstNameValidChars;
+    private int lastNameValidChars;
+    private int idValidChars;
+
+    public string FirstName { get { return firstName.Substring(0, firstNameValidChars); } }
+    public string LastName { get { return lastName.Substring(0, lastNameValidChars); } }
+    public DateOnly BirthDate { get { return birthDate; } }
+    public string Id { get { return id.Substring(0, idValidChars); } }
 
     public Person(string firstName, string lastName, DateOnly birthDate, string id)
     {
-        FirstName = firstName;
-        LastName = lastName;
-        BirthDate = birthDate;
-        Id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.birthDate = birthDate;
+        this.id = id;
+
+        firstNameValidChars = (firstName.Length < FIRST_NAME_MAX_CHARS) ? firstName.Length : FIRST_NAME_MAX_CHARS;
+        lastNameValidChars = (lastName.Length < LAST_NAME_MAX_CHARS) ? lastName.Length : LAST_NAME_MAX_CHARS;
+        idValidChars = (id.Length < ID_MAX_CHARS) ? id.Length : ID_MAX_CHARS;
     }
 
     public Person() : this(string.Empty, string.Empty, default, string.Empty) { }
@@ -21,21 +38,85 @@ public class Person : IData<Person>
 
     public bool Equals(Person other)
     {
-        return Id == other.Id;
+        return id == other.id;
     }
 
     public Person FromBytes(byte[] dataBytes)
     {
-        throw new NotImplementedException();
+        int offset = 0;
+        var firstName = ConvertBytesToString(dataBytes, offset, FIRST_NAME_MAX_CHARS);
+        offset += FIRST_NAME_MAX_CHARS * sizeof(char);
+        
+        var lastName = ConvertBytesToString(dataBytes, offset, LAST_NAME_MAX_CHARS);
+        offset += LAST_NAME_MAX_CHARS * sizeof(char);
+
+        var id = ConvertBytesToString(dataBytes, offset, ID_MAX_CHARS);
+        offset += ID_MAX_CHARS * sizeof(char);
+
+        var birthDateTotalDays = BitConverter.ToInt32(dataBytes, offset);
+        var birthDate = DateOnly.FromDayNumber(birthDateTotalDays);
+
+        return new Person(firstName, lastName, birthDate, id);
     }
 
     public byte[] GetBytes()
     {
-        throw new NotImplementedException();
+        var firstNameB = ConvertStringToBytes(firstName, FIRST_NAME_MAX_CHARS);
+        var lastNameB = ConvertStringToBytes(lastName, LAST_NAME_MAX_CHARS);
+        var idB = ConvertStringToBytes(id, ID_MAX_CHARS);
+        var birthDateTotalDaysB = BitConverter.GetBytes(birthDate.DayNumber);
+
+        byte[][] arrayOfByteArray = [firstNameB, lastNameB, idB, birthDateTotalDaysB];
+        byte[] result = new byte[firstNameB.Length + lastNameB.Length + idB.Length + birthDateTotalDaysB.Length];
+
+        int offset = 0;
+        for (int i = 0; i < arrayOfByteArray.Length; i++)
+        {
+            for (int j = 0; j < arrayOfByteArray[i].Length; j++)
+            {
+                result[offset + j] = arrayOfByteArray[i][j];
+            }
+            offset += arrayOfByteArray[i].Length;
+        }
+
+        return result;
     }
 
     public int GetSize()
     {
-        return 
+        return (sizeof(char) * FIRST_NAME_MAX_CHARS) + (sizeof(char) * LAST_NAME_MAX_CHARS) + (sizeof(char) * ID_MAX_CHARS) + (sizeof(int));
+    }
+
+    public static string SetStringLength(string stringToSetLength, int length)
+    {
+        if (stringToSetLength.Length > length)
+            return stringToSetLength.Substring(0, length);
+        else
+            return stringToSetLength.PadRight(length, '\0');
+    }
+
+    public static byte[] ConvertStringToBytes(string stringToBytes, int length)
+    {
+        stringToBytes = SetStringLength(stringToBytes, length);
+        byte[] bytes = new byte[length * sizeof(char)];
+
+        for (int i = 0; i < length; i++)
+        {
+            var charsBytes = BitConverter.GetBytes(stringToBytes[i]);
+            bytes[i * 2] = charsBytes[0];
+            bytes[i * 2 + 1] = charsBytes[1];
+        }
+
+        return bytes;
+    }
+
+    public static string ConvertBytesToString(byte[] bytes, int offset, int length)
+    {
+        char[] chars = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            chars[i] = BitConverter.ToChar(bytes, offset + i * sizeof(char));
+        }
+        return new string(chars);
     }
 }

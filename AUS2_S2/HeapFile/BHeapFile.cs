@@ -1,4 +1,4 @@
-﻿namespace AUS2_S2.HeapFile;
+namespace AUS2_S2.HeapFile;
 
 public class BHeapFile<T> where T : IData<T>, new()
 {
