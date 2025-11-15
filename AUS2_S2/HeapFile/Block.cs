@@ -21,6 +21,7 @@ public class Block<T> where T : IData<T>, new()
 
     public byte[] GetBytes()
     {
+        var dummyT = new T();
         byte[] bytes  = new byte[blockSize];
         int offset = 0;
         var validCountB = BitConverter.GetBytes(ValidCount);
@@ -31,12 +32,19 @@ public class Block<T> where T : IData<T>, new()
         }
         foreach (var data in BlockData)
         {
-            foreach (var b in data.GetBytes())
+            if (data != null)
             {
-                bytes[offset] = b;
-                offset++;
+                foreach (var b in data.GetBytes())
+                {
+                    bytes[offset] = b;
+                    offset++;
+                }
             }
-            offset += data.GetSize();
+            else
+            {
+                offset += dummyT.GetSize();
+            }
+                
         }
         
         return bytes;
@@ -55,6 +63,7 @@ public class Block<T> where T : IData<T>, new()
         {
             Array.Copy(dataBytes, offset, bytesT, 0, bytesT.Length);
             block.BlockData[i] = dummyT.FromBytes(bytesT);
+            offset += dummyT.GetSize();
         }
 
         return block;
@@ -63,5 +72,10 @@ public class Block<T> where T : IData<T>, new()
     public static int GetManageInfoSize()
     {
         return sizeof(int);
+    }
+
+    public void IncrementValidCount()
+    {
+        ValidCount++;
     }
 }

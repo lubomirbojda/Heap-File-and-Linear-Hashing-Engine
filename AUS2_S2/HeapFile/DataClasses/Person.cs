@@ -3,8 +3,8 @@ namespace AUS2_S2.HeapFile.DataClasses;
 public class Person : IData<Person>
 {
     public const int FIRST_NAME_MAX_CHARS = 15;
-    public const int LAST_NAME_MAX_CHARS = 15;
-    public const int ID_MAX_CHARS = 15;
+    public const int LAST_NAME_MAX_CHARS = 14;
+    public const int ID_MAX_CHARS = 10;
 
     private string firstName;
     private string lastName;
@@ -38,19 +38,25 @@ public class Person : IData<Person>
 
     public bool Equals(Person other)
     {
-        return id == other.id;
+        return id.Equals(other.id);
     }
 
     public Person FromBytes(byte[] dataBytes)
     {
         int offset = 0;
-        var firstName = ConvertBytesToString(dataBytes, offset, FIRST_NAME_MAX_CHARS);
+        var firstNameCount = BitConverter.ToInt32(dataBytes, offset);
+        offset += sizeof(int);
+        var firstName = ConvertBytesToString(dataBytes, offset, firstNameCount);
         offset += FIRST_NAME_MAX_CHARS * sizeof(char);
-        
-        var lastName = ConvertBytesToString(dataBytes, offset, LAST_NAME_MAX_CHARS);
+
+        var lastNameCount = BitConverter.ToInt32(dataBytes, offset);
+        offset += sizeof(int);
+        var lastName = ConvertBytesToString(dataBytes, offset, lastNameCount);
         offset += LAST_NAME_MAX_CHARS * sizeof(char);
 
-        var id = ConvertBytesToString(dataBytes, offset, ID_MAX_CHARS);
+        var idCount = BitConverter.ToInt32(dataBytes, offset);
+        offset += sizeof(int);
+        var id = ConvertBytesToString(dataBytes, offset, idCount);
         offset += ID_MAX_CHARS * sizeof(char);
 
         var birthDateTotalDays = BitConverter.ToInt32(dataBytes, offset);
@@ -66,17 +72,33 @@ public class Person : IData<Person>
         var idB = ConvertStringToBytes(id, ID_MAX_CHARS);
         var birthDateTotalDaysB = BitConverter.GetBytes(birthDate.DayNumber);
 
-        byte[][] arrayOfByteArray = [firstNameB, lastNameB, idB, birthDateTotalDaysB];
-        byte[] result = new byte[firstNameB.Length + lastNameB.Length + idB.Length + birthDateTotalDaysB.Length];
+        byte[][] arrayOfByteArrayStrings = [firstNameB, lastNameB, idB];
+        byte[][] arrayOfByteArrayStringsValidCounts = [
+            BitConverter.GetBytes(firstNameValidChars), 
+            BitConverter.GetBytes(lastNameValidChars), 
+            BitConverter.GetBytes(idValidChars)
+            ];
+        byte[] result = new byte[3 * sizeof(int) + firstNameB.Length + lastNameB.Length + idB.Length + birthDateTotalDaysB.Length];
 
         int offset = 0;
-        for (int i = 0; i < arrayOfByteArray.Length; i++)
+        for (int i = 0; i < arrayOfByteArrayStrings.Length; i++)
         {
-            for (int j = 0; j < arrayOfByteArray[i].Length; j++)
+            foreach (var b in arrayOfByteArrayStringsValidCounts[i])
             {
-                result[offset + j] = arrayOfByteArray[i][j];
+                result[offset] = b;
+                offset++;
             }
-            offset += arrayOfByteArray[i].Length;
+            for (int j = 0; j < arrayOfByteArrayStrings[i].Length; j++)
+            {
+                result[offset + j] = arrayOfByteArrayStrings[i][j];
+            }
+            offset += arrayOfByteArrayStrings[i].Length;
+        }
+
+        foreach (var b in birthDateTotalDaysB)
+        {
+            result[offset] = b;
+            offset++;
         }
 
         return result;
@@ -84,7 +106,7 @@ public class Person : IData<Person>
 
     public int GetSize()
     {
-        return (sizeof(char) * FIRST_NAME_MAX_CHARS) + (sizeof(char) * LAST_NAME_MAX_CHARS) + (sizeof(char) * ID_MAX_CHARS) + (sizeof(int));
+        return (sizeof(char) * FIRST_NAME_MAX_CHARS) + (sizeof(char) * LAST_NAME_MAX_CHARS) + (sizeof(char) * ID_MAX_CHARS) + (4 * sizeof(int));
     }
 
     public static string SetStringLength(string stringToSetLength, int length)
