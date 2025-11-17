@@ -78,4 +78,9 @@ public class Block<T> where T : IData<T>, new()
     {
         ValidCount++;
     }
+
+    public void DecrementValidCount()
+    {
+        ValidCount--;
+    }
 }
