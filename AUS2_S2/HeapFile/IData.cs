@@ -6,4 +6,5 @@ public interface IData<T>
     int GetSize();
     byte[] GetBytes();
     T FromBytes(byte[] dataBytes);
+    string GetPrintString();
 }

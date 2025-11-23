@@ -141,4 +141,9 @@ public class Person : IData<Person>
         }
         return new string(chars);
     }
+
+    public string GetPrintString()
+    {
+        return "First name: " + FirstName + ", Last Name: " + LastName + ", Birthdate: " + BirthDate.ToString("dd/MM/yyyy") + ", ID: " + Id;
+    }
 }
