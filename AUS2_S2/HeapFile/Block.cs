@@ -5,7 +5,7 @@ public class Block<T> where T : IData<T>, new()
     public T[] BlockData { get; private set; }
     public int ValidCount { get; private set; }
 
-    private int blockSize;
+    private readonly int blockSize;
 
     public Block(int blockSize, int blockingFactor)
     {

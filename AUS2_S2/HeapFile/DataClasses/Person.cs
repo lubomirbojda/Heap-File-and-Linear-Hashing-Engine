@@ -6,14 +6,14 @@ public class Person : IData<Person>
     public const int LAST_NAME_MAX_CHARS = 14;
     public const int ID_MAX_CHARS = 10;
 
-    private string firstName;
-    private string lastName;
-    private DateOnly birthDate;
-    private string id;
+    private readonly string firstName;
+    private readonly string lastName;
+    private readonly DateOnly birthDate;
+    private readonly string id;
 
-    private int firstNameValidChars;
-    private int lastNameValidChars;
-    private int idValidChars;
+    private readonly int firstNameValidChars;
+    private readonly int lastNameValidChars;
+    private readonly int idValidChars;
 
     public string FirstName { get { return firstName.Substring(0, firstNameValidChars); } }
     public string LastName { get { return lastName.Substring(0, lastNameValidChars); } }

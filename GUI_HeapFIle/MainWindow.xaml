@@ -8,6 +8,7 @@
         Title="MainWindow" Height="500" Width="800">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -15,7 +16,15 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
+        <Menu Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Header="Generate" Click="GenerateMenuItem_Click"/>
+                <MenuItem Header="Reset file" Click="ResetFileMenuItem_Click"/>
+                <MenuItem Header="Close" Click="CloseMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -57,9 +66,9 @@
         </Grid>
         
 
-        <Button Grid.Row="1" Content="Print heapfile" Click="PrintFileButton_Click" Margin="5"/>
-        <Button Grid.Row="2" Content="Insert" Margin="5" Click="InsertButton_Click"/>
-        <Button Grid.Row="3" Content="Get" Margin="5" Click="GetButton_Click_1"/>
-        <Button Grid.Row="4" Content="Delete" Margin="5" Click="DeleteButton_Click_2"/>
+        <Button Grid.Row="2" Content="Print heapfile" Click="PrintFileButton_Click" Margin="5"/>
+        <Button Grid.Row="3" Content="Insert" Margin="5" Click="InsertButton_Click"/>
+        <Button Grid.Row="4" Content="Get" Margin="5" Click="GetButton_Click_1"/>
+        <Button Grid.Row="5" Content="Delete" Margin="5" Click="DeleteButton_Click_2"/>
     </Grid>
 </Window>

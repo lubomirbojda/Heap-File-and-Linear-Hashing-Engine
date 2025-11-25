@@ -1,6 +1,7 @@
 using AUS2_S2.HeapFile;
 using AUS2_S2.HeapFile.DataClasses;
 using GUI_HeapFIle.OperationsWindows;
+using Microsoft.Win32;
 using System.IO;
 using System.Windows;
 
@@ -11,18 +12,30 @@ namespace GUI_HeapFIle
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const string path = "C:\\Users\\gamet\\Desktop\\pokus.txt";
+        //private const string path = "C:\\Users\\gamet\\Desktop\\pokus.txt";
+        private string pathCurrent = Environment.CurrentDirectory;
+        private string filePath;
+        private int blockSize;
         private BHeapFile<Person> file;
         public MainWindow()
         {
             InitializeComponent();
-            if (File.Exists(path))
-                File.Delete(path);
-
             var dummy = new Person();
-            file = new BHeapFile<Person>(dummy.GetSize() * 6 + 12, path);
+            filePath = Path.Combine(pathCurrent, "heapfile");
+            blockSize = dummy.GetSize() * 2 + 12;
+            if (File.Exists(filePath))
+                file = new BHeapFile<Person>(filePath, filePath + ".metadata");
+            else
+                file = new BHeapFile<Person>(blockSize, filePath);
 
-            FillHeapFile();
+            //FillHeapFile();
+            Closed += MW_Closed;
+        }
+
+        private void MW_Closed(object? sender, EventArgs e)
+        {
+            file.Close();
+            Application.Current.Shutdown();
         }
 
         private void FillHeapFile()
@@ -62,6 +75,11 @@ namespace GUI_HeapFIle
 
         private void PrintFileButton_Click(object sender, RoutedEventArgs e)
         {
+            PrintFile();
+        }
+
+        private void PrintFile()
+        {
             TextBoxHeapFile.Text = file.GetAllBlocksAsString().allBlocks;
             TextBoxPartlyClearBlocks.Text = file.GetAllBlocksAsString().partlyClearBlocks;
             TextBoxFullyClearBlocks.Text = file.GetAllBlocksAsString().fullyClearBlocks;
@@ -80,6 +98,23 @@ namespace GUI_HeapFIle
         private void DeleteButton_Click_2(object sender, RoutedEventArgs e)
         {
             new DeleteWindow(file).ShowDialog();
+        }
+
+        private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            file.Close();
+            Close();
+        }
+
+        private void ResetFileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            file.Close();
+            file = new BHeapFile<Person>(blockSize, filePath);
+        }
+
+        private void GenerateMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            FillHeapFile();
         }
     }
 }
