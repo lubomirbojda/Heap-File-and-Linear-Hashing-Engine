@@ -15,11 +15,11 @@ public class Tester
     public void TestHeapFile()
     {
         var numberOfOperation = 10000;
-        var path = "C:\\Users\\gamet\\Desktop\\pokus.txt";
+        var path = Path.Combine(Environment.CurrentDirectory, "testingHF");
         Random rand = new();
         if (File.Exists(path))
             File.Delete(path);
-        var heapFile = new BHeapFile<Person>(576, path);
+        var heapFile = new BHeapFile<Person>(576, path, path + ".metadata");
         List<(long address, Person person)> list = [];
 
         for (int i = 0; i < numberOfOperation; i++)
@@ -46,6 +46,13 @@ public class Tester
                         return;
                     }
                     list.RemoveAt(randIndex);
+
+                    var loaded = heapFile.Get(address, person);
+                    if (loaded != null)
+                    {
+                        Console.WriteLine("Error at delete from heapfile!");
+                        return;
+                    }
                 }
             }
             //get
@@ -64,6 +71,7 @@ public class Tester
                 } 
             }
 
+            //check if all persons are at addresses
             foreach (var (address, person) in list)
             {
                 var foundPerson = heapFile.Get(address, person);

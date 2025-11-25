@@ -2,9 +2,9 @@ namespace AUS2_S2.HeapFile.DataClasses;
 
 public class Person : IData<Person>
 {
-    public const int FIRST_NAME_MAX_CHARS = 15;
-    public const int LAST_NAME_MAX_CHARS = 14;
-    public const int ID_MAX_CHARS = 10;
+    private const int FIRST_NAME_MAX_CHARS = 15;
+    private const int LAST_NAME_MAX_CHARS = 14;
+    private const int ID_MAX_CHARS = 10;
 
     private readonly string firstName;
     private readonly string lastName;

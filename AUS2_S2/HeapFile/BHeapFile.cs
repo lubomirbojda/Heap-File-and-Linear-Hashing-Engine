@@ -14,7 +14,7 @@ public class BHeapFile<T> where T : IData<T>, new()
     private readonly List<long> fullyClearBlocks = [];
     private readonly string metadataPath;
 
-    public BHeapFile(int dataBlockSize, string filePath)
+    public BHeapFile(int dataBlockSize, string filePath, string metadataFilePath)
     {
         blockSize = dataBlockSize;
         int availableBytes = dataBlockSize - Block<T>.GetManageInfoSize();
@@ -22,7 +22,7 @@ public class BHeapFile<T> where T : IData<T>, new()
         actualBlock = new Block<T>(blockSize, blockingFactor);
         lastBlockAdress = 0;
 
-        metadataPath = filePath + ".metadata";
+        metadataPath = metadataFilePath;
 
         if (File.Exists(filePath))
             File.Delete(filePath);
@@ -93,7 +93,9 @@ public class BHeapFile<T> where T : IData<T>, new()
         {
             fullyClearBlocks.Sort();
             returningAddress = InsertDataToFirstBlockFromAdressList(fullyClearBlocks, insertingData);
-            partlyClearBlocks.Add(returningAddress);
+            if (actualBlock.ValidCount == blockingFactor)
+                partlyClearBlocks.Add(returningAddress);
+            fullyClearBlocks.Remove(returningAddress);
             return returningAddress;
         }
 
@@ -162,6 +164,7 @@ public class BHeapFile<T> where T : IData<T>, new()
 
                         if (actualBlock.ValidCount != 0)
                         {
+                            lastBlockAdress = newAddress;
                             break;
                         }
 
@@ -221,6 +224,8 @@ public class BHeapFile<T> where T : IData<T>, new()
     {
         var sbAllBlocks = new StringBuilder();
         long actualAdress = 0;
+        partlyClearBlocks.Sort();
+        fullyClearBlocks.Sort();
         while (actualAdress < fileStream.Length)
         {
             Seek(actualAdress);

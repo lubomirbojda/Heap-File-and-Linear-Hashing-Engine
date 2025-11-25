@@ -9,18 +9,18 @@ namespace GUI_HeapFIle.OperationsWindows
     /// </summary>
     public partial class GetWindow : Window
     {
-        private BHeapFile<Person> file;
-        public GetWindow(BHeapFile<Person> file)
+        private readonly PersonHF_GUIController guiController;
+        public GetWindow(PersonHF_GUIController guiCont)
         {
             InitializeComponent();
-            this.file = file;
+            guiController = guiCont;
         }
 
         private void GetButton_Click(object sender, RoutedEventArgs e)
         {
             if (long.TryParse(AddressBox.Text, out long address))
             {
-                var person = file.Get(address, new Person(IDBox.Text));
+                var person = guiController.Get(address, new Person(IDBox.Text));
                 if (person == null)
                 {
                     MessageBox.Show("Person not found.", "Failed", MessageBoxButton.OK);

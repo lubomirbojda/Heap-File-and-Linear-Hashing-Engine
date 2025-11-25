@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GUI_HeapFIle"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="800">
+        Title="HeapFileGUI" Height="500" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -18,8 +18,9 @@
 
         <Menu Grid.Row="0">
             <MenuItem Header="File">
+                <MenuItem Header="New" Click="NewMenuItem_Click"/>
+                <MenuItem Header="Open" Click="OpenMenuItem_Click"/>
                 <MenuItem Header="Generate" Click="GenerateMenuItem_Click"/>
-                <MenuItem Header="Reset file" Click="ResetFileMenuItem_Click"/>
                 <MenuItem Header="Close" Click="CloseMenuItem_Click"/>
             </MenuItem>
         </Menu>

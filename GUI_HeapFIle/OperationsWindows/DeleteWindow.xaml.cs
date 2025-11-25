@@ -9,18 +9,18 @@ namespace GUI_HeapFIle.OperationsWindows
     /// </summary>
     public partial class DeleteWindow : Window
     {
-        private BHeapFile<Person> file;
-        public DeleteWindow(BHeapFile<Person> file)
+        private readonly PersonHF_GUIController guiController;
+        public DeleteWindow(PersonHF_GUIController guiCont)
         {
             InitializeComponent();
-            this.file = file;
+            guiController = guiCont;
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (long.TryParse(AddressBox.Text, out long address))
             {
-                var result = file.Delete(address, new Person(IDBox.Text));
+                var result = guiController.Delete(address, new Person(IDBox.Text));
                 if (result)
                     MessageBox.Show("Person deleted successfully.", "Success", MessageBoxButton.OK);
                 else

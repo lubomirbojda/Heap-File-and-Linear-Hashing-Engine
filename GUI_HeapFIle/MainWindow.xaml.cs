@@ -12,65 +12,17 @@ namespace GUI_HeapFIle
     /// </summary>
     public partial class MainWindow : Window
     {
-        //private const string path = "C:\\Users\\gamet\\Desktop\\pokus.txt";
-        private string pathCurrent = Environment.CurrentDirectory;
-        private string filePath;
-        private int blockSize;
-        private BHeapFile<Person> file;
+        private PersonHF_GUIController? guiController;
         public MainWindow()
         {
             InitializeComponent();
-            var dummy = new Person();
-            filePath = Path.Combine(pathCurrent, "heapfile");
-            blockSize = dummy.GetSize() * 2 + 12;
-            if (File.Exists(filePath))
-                file = new BHeapFile<Person>(filePath, filePath + ".metadata");
-            else
-                file = new BHeapFile<Person>(blockSize, filePath);
-
-            //FillHeapFile();
             Closed += MW_Closed;
         }
 
         private void MW_Closed(object? sender, EventArgs e)
         {
-            file.Close();
+            guiController?.CloseFile();
             Application.Current.Shutdown();
-        }
-
-        private void FillHeapFile()
-        {
-            var person1 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy1");
-            var person2 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy2");
-            var person3 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy3");
-            var person4 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy4");
-            var person5 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy5");
-            var person6 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy6");
-            var person7 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy7");
-            var person8 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy8");
-            var person9 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy9");
-            var person10 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy10");
-            var person11 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy11");
-            var person12 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy12");
-            var person13 = new Person("Laco", "Nagy", DateOnly.FromDateTime(new DateTime(2002, 10, 2)), "nagy13");
-
-            file.Insert(person1);
-            file.Insert(person2);
-            file.Insert(person3);
-            file.Insert(person4);
-            file.Insert(person5);
-            file.Insert(person6);
-
-            //---------
-            var add1 = file.Insert(person7);
-            file.Insert(person8);
-            file.Insert(person9);
-            file.Insert(person10);
-            file.Insert(person11);
-            file.Insert(person12);
-
-            //------
-            var add2 = file.Insert(person13);
         }
 
         private void PrintFileButton_Click(object sender, RoutedEventArgs e)
@@ -80,41 +32,101 @@ namespace GUI_HeapFIle
 
         private void PrintFile()
         {
-            TextBoxHeapFile.Text = file.GetAllBlocksAsString().allBlocks;
-            TextBoxPartlyClearBlocks.Text = file.GetAllBlocksAsString().partlyClearBlocks;
-            TextBoxFullyClearBlocks.Text = file.GetAllBlocksAsString().fullyClearBlocks;
+            TextBoxHeapFile.Text = guiController?.GetAllBlocks().allBlocks;
+            TextBoxPartlyClearBlocks.Text = guiController?.GetAllBlocks().partlyClearBlocks;
+            TextBoxFullyClearBlocks.Text = guiController?.GetAllBlocks().fullyClearBlocks;
         }
 
         private void InsertButton_Click(object sender, RoutedEventArgs e)
         {
-            new InsertWindow(file).ShowDialog();
+            if (guiController != null)
+                new InsertWindow(guiController).ShowDialog();
         }
 
         private void GetButton_Click_1(object sender, RoutedEventArgs e)
         {
-            new GetWindow(file).ShowDialog();
+            if (guiController != null)
+                new GetWindow(guiController).ShowDialog();
         }
 
         private void DeleteButton_Click_2(object sender, RoutedEventArgs e)
         {
-            new DeleteWindow(file).ShowDialog();
+            if (guiController != null)
+                new DeleteWindow(guiController).ShowDialog();
         }
 
         private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            file.Close();
+            guiController?.CloseFile();
             Close();
         }
 
-        private void ResetFileMenuItem_Click(object sender, RoutedEventArgs e)
+        private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            file.Close();
-            file = new BHeapFile<Person>(blockSize, filePath);
+            int newblockSize;
+            var newBlockSizeDialog = new NewFileBlockSizeWindow();
+            newBlockSizeDialog.ShowDialog();
+
+            if (newBlockSizeDialog.DialogResult == true)
+            {
+                newblockSize = newBlockSizeDialog.BlockSize;
+            }
+            else
+            {
+                MessageBox.Show("Not valid block size.");
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Title = "Choose new file",
+                //Filter = "Heap file (*.heap)|*.heap|Všetky súbory (*.*)|*.*",
+                //DefaultExt = ".heap",
+                //AddExtension = true
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                guiController?.CloseFile();
+                string path = dialog.FileName;
+                guiController = new(new BHeapFile<Person>(newblockSize, path, path + ".metadata"));
+            }
+            else
+            {
+                MessageBox.Show("Not correctly choosed file.");
+                return;
+            }
         }
 
         private void GenerateMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            FillHeapFile();
+            guiController?.GenerateDataForHeapFile();
+        }
+
+        private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Choose file to open",
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var metadataFilePath = dialog.FileName + ".metadata";
+                if (!File.Exists(metadataFilePath))
+                {
+                    MessageBox.Show("Metadata file missing.");
+                    return;
+                }
+
+                guiController?.CloseFile();
+                guiController = new(new BHeapFile<Person>(dialog.FileName, metadataFilePath));
+            }
+            else
+            {
+                MessageBox.Show("Not correctly choosed file.");
+                return;
+            }
         }
     }
 }
