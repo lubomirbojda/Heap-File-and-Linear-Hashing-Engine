@@ -91,8 +91,7 @@ public class Tester
     public void TestLinHashFile()
     {
         var numberOfOperation = 10000;
-        int numberofins = 0;
-        var path = "C:\\Users\\gamet\\Desktop\\aa";
+        var path = Environment.CurrentDirectory;
         var mainPath = Path.Combine(path, "mainLHF");
         var overPath = Path.Combine(path, "overLHF");
         Random rand = new();
@@ -102,9 +101,10 @@ public class Tester
         for (int i = 0; i < numberOfOperation; i++)
         {
             var operation = rand.NextDouble();
+            Console.WriteLine("Doing operation number: " + i);
 
             //insert
-            if (operation < 0.6)
+            if (operation < 0.4)
             {
                 var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
                 int charsName = rand.Next(2, 14);
@@ -112,11 +112,9 @@ public class Tester
                 var randPerson = new Person(GetRandomString(charsName, rand), GetRandomString(charsLastName, rand), birthdate, GetRandomString(8, rand));
                 list.Add(randPerson);
                 lhfile.Insert(randPerson);
-                numberofins++;
-                Console.WriteLine("Operation insert number: " + numberofins + " done.");
             }
             //get
-            else
+            else if (operation < 0.6)
             {
                 if (list.Count > 0)
                 {
@@ -125,10 +123,31 @@ public class Tester
                     var foundPerson = lhfile.Get(person);
                     if (foundPerson == null || !foundPerson.Equals(person))
                     {
-                        Console.WriteLine("Error at get from heapfile!");
+                        Console.WriteLine("Error at get from linear hash file!");
                         return;
                     }
-                    Console.WriteLine("Operation get number: " + i + " done.");
+                }
+            }
+            //delete
+            else
+            {
+                if (list.Count > 0)
+                {
+                    var randIndex = rand.Next(0, list.Count);
+                    var person = list[randIndex];
+                    if (!lhfile.Delete(person))
+                    {
+                        Console.WriteLine("Error at delete from linear hash file!");
+                        return;
+                    }
+                    var foundPerson = lhfile.Get(person);
+                    if (foundPerson != null)
+                    {
+                        Console.WriteLine("Error at delete from linear hash file!");
+                        return;
+                    }
+
+                    list.Remove(person);
                 }
             }
 
@@ -138,12 +157,12 @@ public class Tester
                 var foundPerson = lhfile.Get(person);
                 if (foundPerson == null || !foundPerson.Equals(person))
                 {
-                    Console.WriteLine("File does not contain all data it should!");
+                    Console.WriteLine("Linear hash file does not contain all data it should!");
                     return;
                 }
             }
-
-            Console.WriteLine("Factor: " + lhfile.GetFactorTest());
         }
+
+        Console.WriteLine("Linear has file test successful.");
     }
 }

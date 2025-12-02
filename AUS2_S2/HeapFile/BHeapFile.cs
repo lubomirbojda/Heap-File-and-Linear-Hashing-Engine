@@ -262,6 +262,8 @@ public class BHeapFile<T> where T : IData<T>, new()
         fileStream.Write(b.GetBytes(), 0, BlockSize);
         fileStream.Flush();
 
+        fullyClearBlocks.Remove(addr);
+
         LastBlockAdress = addr;
         return addr;
     }
@@ -277,6 +279,18 @@ public class BHeapFile<T> where T : IData<T>, new()
             fullyClearBlocks.Add(address);
     }
 
+    public void RemoveLastBlock()
+    {
+        if (LastBlockAdress >= 0)
+        {
+            fullyClearBlocks.Remove(LastBlockAdress);
+            SetNewFileSize(LastBlockAdress);
+            LastBlockAdress -= BlockSize;
+            if (LastBlockAdress < 0)
+                LastBlockAdress = -1;
+        }
+    }
+
     public (string allBlocks, string partlyClearBlocks, string fullyClearBlocks) GetAllBlocksAsString()
     {
         var sbAllBlocks = new StringBuilder();
@@ -290,6 +304,12 @@ public class BHeapFile<T> where T : IData<T>, new()
             long blockNumber = actualAdress / BlockSize;
             sbAllBlocks.AppendLine("-----BLOCK " + blockNumber + " -----");
             sbAllBlocks.AppendLine("Adress: " + actualAdress);
+
+            if (ActualBlock.OverflowAddress >= 0)
+                sbAllBlocks.AppendLine("Overflow address: " + ActualBlock.OverflowAddress);
+            else
+                sbAllBlocks.AppendLine("Overflow address: none");
+
             sbAllBlocks.AppendLine("Valid count: " + ActualBlock.ValidCount);
 
             if (ActualBlock.ValidCount == 0)
