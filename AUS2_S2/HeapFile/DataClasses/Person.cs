@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace AUS2_S2.HeapFile.DataClasses;
 
 public class Person : IData<Person>
@@ -145,5 +147,16 @@ public class Person : IData<Person>
     public string GetPrintString()
     {
         return "First name: " + FirstName + ", Last Name: " + LastName + ", Birthdate: " + BirthDate.ToString("dd/MM/yyyy") + ", ID: " + Id;
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 23;
+        for (int i = 0; i < idValidChars; i++)
+        {
+            hash = hash * 31 + id[i];
+        }
+        hash ^= (hash >> 16);
+        return hash;
     }
 }

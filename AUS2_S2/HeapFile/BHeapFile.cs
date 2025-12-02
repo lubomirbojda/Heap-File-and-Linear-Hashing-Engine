@@ -4,23 +4,23 @@ namespace AUS2_S2.HeapFile;
 
 public class BHeapFile<T> where T : IData<T>, new()
 {
-    private int blockingFactor;
-    private int blockSize;
-    private long lastBlockAdress;
+    public int BlockingFactor { get; private set; }
+    public int BlockSize { get; private set; }
+    private long LastBlockAdress;
     private readonly FileStream fileStream;
-    private Block<T> actualBlock;
+    private Block<T> ActualBlock;
     private readonly T dummyT = new();
     private readonly List<long> partlyClearBlocks = [];
-    private readonly List<long> fullyClearBlocks = [];
+    public List<long> fullyClearBlocks { get; private set; } = [];
     private readonly FileStream metadataStream;
 
     public BHeapFile(int dataBlockSize, string filePath, string metadataFilePath)
     {
-        blockSize = dataBlockSize;
+        BlockSize = dataBlockSize;
         int availableBytes = dataBlockSize - Block<T>.GetManageInfoSize();
-        blockingFactor = (availableBytes >= dummyT.GetSize()) ? (availableBytes / dummyT.GetSize()) : throw new InvalidOperationException("Block is not big enough)");
-        actualBlock = new Block<T>(blockSize, blockingFactor);
-        lastBlockAdress = 0;
+        BlockingFactor = (availableBytes >= dummyT.GetSize()) ? (availableBytes / dummyT.GetSize()) : throw new InvalidOperationException("Block is not big enough)");
+        ActualBlock = new Block<T>(BlockSize, BlockingFactor);
+        LastBlockAdress = -1;
 
         if (File.Exists(filePath))
             File.Delete(filePath);
@@ -38,15 +38,15 @@ public class BHeapFile<T> where T : IData<T>, new()
         fileStream = new(filePath, FileMode.Open, FileAccess.ReadWrite);
         metadataStream = new(metadataFilePath, FileMode.Open, FileAccess.ReadWrite);
         LoadMetadata();
-        actualBlock = new Block<T>(blockSize, blockingFactor);
+        ActualBlock = new Block<T>(BlockSize, BlockingFactor);
     }
 
     private void LoadMetadata()
     {
         using var br = new BinaryReader(metadataStream);
-        lastBlockAdress = br.ReadInt64();
-        blockingFactor = br.ReadInt32();
-        blockSize = br.ReadInt32();
+        LastBlockAdress = br.ReadInt64();
+        BlockingFactor = br.ReadInt32();
+        BlockSize = br.ReadInt32();
         int partlyClearCount = br.ReadInt32();
         partlyClearBlocks.Clear();
         for (int i = 0; i < partlyClearCount; i++)
@@ -61,11 +61,11 @@ public class BHeapFile<T> where T : IData<T>, new()
     {
         using var bw = new BinaryWriter(metadataStream);
         //long
-        bw.Write(lastBlockAdress);
+        bw.Write(LastBlockAdress);
         //int
-        bw.Write(blockingFactor);
+        bw.Write(BlockingFactor);
         //int
-        bw.Write(blockSize);
+        bw.Write(BlockSize);
         //int
         bw.Write(partlyClearBlocks.Count);
         //long
@@ -88,22 +88,22 @@ public class BHeapFile<T> where T : IData<T>, new()
         if (fullyClearBlocks.Count > 0)
         {
             long returningAddress = InsertDataToFirstBlockFromAdressList(fullyClearBlocks, insertingData);
-            if (actualBlock.ValidCount < blockingFactor)
+            if (ActualBlock.ValidCount < BlockingFactor)
                 partlyClearBlocks.Add(returningAddress);
             fullyClearBlocks.Remove(returningAddress);
             return returningAddress;
         }
 
         fileStream.Seek(0, SeekOrigin.End);
-        lastBlockAdress = fileStream.Position;
-        var newBlock = new Block<T>(blockSize, blockingFactor);
+        LastBlockAdress = fileStream.Position;
+        var newBlock = new Block<T>(BlockSize, BlockingFactor);
         newBlock.BlockData[0] = insertingData;
         newBlock.IncrementValidCount();
         fileStream.Write(newBlock.GetBytes(), 0, newBlock.GetSize());
         fileStream.Flush();
-        if (blockingFactor > 1)
-            partlyClearBlocks.Add(lastBlockAdress);
-        return lastBlockAdress;
+        if (BlockingFactor > 1)
+            partlyClearBlocks.Add(LastBlockAdress);
+        return LastBlockAdress;
     }
 
     private long InsertDataToFirstBlockFromAdressList(List<long> listOfBlocksAdresses, T data)
@@ -112,12 +112,10 @@ public class BHeapFile<T> where T : IData<T>, new()
         long returningPos = listOfBlocksAdresses[0];
         Seek(returningPos);
         ChangeActualBlockByActualPosition();
-        Seek(returningPos);
-        actualBlock.BlockData[actualBlock.ValidCount] = data;
-        actualBlock.IncrementValidCount();
-        fileStream.Write(actualBlock.GetBytes(), 0, blockSize);
-        fileStream.Flush();
-        if (actualBlock.ValidCount == blockingFactor)
+        ActualBlock.BlockData[ActualBlock.ValidCount] = data;
+        ActualBlock.IncrementValidCount();
+        WriteActualBlockAtPosition(returningPos);
+        if (ActualBlock.ValidCount == BlockingFactor)
             listOfBlocksAdresses.RemoveAt(0);
         return returningPos;
     }
@@ -126,7 +124,7 @@ public class BHeapFile<T> where T : IData<T>, new()
     {
         Seek(address);
         ChangeActualBlockByActualPosition();
-        var p = actualBlock.BlockData.Take(actualBlock.ValidCount).FirstOrDefault(x => x.Equals(dummy));
+        var p = ActualBlock.BlockData.Take(ActualBlock.ValidCount).FirstOrDefault(x => x.Equals(dummy));
         return p;
     }
 
@@ -134,22 +132,22 @@ public class BHeapFile<T> where T : IData<T>, new()
     {
         Seek(address);
         ChangeActualBlockByActualPosition();
-        var dataIndex = Array.FindIndex(actualBlock.BlockData.Take(actualBlock.ValidCount).ToArray(), x => x.Equals(dummy));
-        if (dataIndex == -1 || dataIndex > actualBlock.ValidCount)
+        var dataIndex = Array.FindIndex(ActualBlock.BlockData.Take(ActualBlock.ValidCount).ToArray(), x => x.Equals(dummy));
+        if (dataIndex == -1 || dataIndex > ActualBlock.ValidCount)
             return false;
 
-        for (int i = dataIndex + 1; i < actualBlock.ValidCount; i++)
+        for (int i = dataIndex + 1; i < ActualBlock.ValidCount; i++)
         {
-            actualBlock.BlockData[i - 1] = actualBlock.BlockData[i];
+            ActualBlock.BlockData[i - 1] = ActualBlock.BlockData[i];
         }
-        actualBlock.DecrementValidCount();
+        ActualBlock.DecrementValidCount();
 
         if (partlyClearBlocks.Contains(address))
         {
-            if (actualBlock.ValidCount == 0)
+            if (ActualBlock.ValidCount == 0)
             {
                 partlyClearBlocks.Remove(address);
-                if (address == lastBlockAdress)
+                if (address == LastBlockAdress)
                 {
                     RemoveAllEmptyBlocksFromEnd();
                     return true;
@@ -162,9 +160,9 @@ public class BHeapFile<T> where T : IData<T>, new()
         }
         else
         {
-            if (actualBlock.ValidCount == 0)
+            if (ActualBlock.ValidCount == 0)
             {
-                if (address == lastBlockAdress)
+                if (address == LastBlockAdress)
                 {
                     RemoveAllEmptyBlocksFromEnd();
                     return true;
@@ -180,33 +178,33 @@ public class BHeapFile<T> where T : IData<T>, new()
             }     
         }
 
-        Seek(address);
-        fileStream.Write(actualBlock.GetBytes(), 0, blockSize);
-        fileStream.Flush();
+        WriteActualBlockAtPosition(address);
 
         return true;
     }
 
-    private void RemoveAllEmptyBlocksFromEnd()
+    public void RemoveAllEmptyBlocksFromEnd()
     {
-        var adressForNewFileSize = lastBlockAdress;
-        var newAddress = adressForNewFileSize - blockSize;
+        var adressForNewFileSize = LastBlockAdress;
+        var newAddress = adressForNewFileSize;
         while (newAddress >= 0)
         {
             if (!fullyClearBlocks.Contains(newAddress))
             {
-                lastBlockAdress = newAddress;
+                LastBlockAdress = newAddress;
                 break;
             }
 
             adressForNewFileSize = newAddress;
             fullyClearBlocks.Remove(newAddress);
-            newAddress -= blockSize;
+            newAddress -= BlockSize;
         }
-        SetNewFileSize(adressForNewFileSize);
+
+        if (adressForNewFileSize != LastBlockAdress)
+            SetNewFileSize(adressForNewFileSize);
     }
 
-    private void Seek(long adress)
+    public void Seek(long adress)
     {
         fileStream.Seek(adress, SeekOrigin.Begin);
     }
@@ -226,11 +224,57 @@ public class BHeapFile<T> where T : IData<T>, new()
         metadataStream.Close();
     }
 
-    private void ChangeActualBlockByActualPosition()
+    public void ChangeActualBlockByActualPosition()
     {
-        var bytes = new byte[blockSize];
-        fileStream?.Read(bytes, 0, actualBlock.GetSize());
-        actualBlock = actualBlock.FromBytes(bytes);
+        var bytes = new byte[BlockSize];
+        fileStream?.Read(bytes, 0, ActualBlock.GetSize());
+        ActualBlock = ActualBlock.FromBytes(bytes);
+    }
+
+    public void WriteActualBlockAtPosition(long address)
+    {
+        Seek(address);
+        fileStream.Write(ActualBlock.GetBytes(), 0, BlockSize);
+        fileStream.Flush();
+    }
+
+    public Block<T> ReadBlock(long address)
+    {
+        var bytes = new byte[BlockSize];
+        fileStream.Seek(address, SeekOrigin.Begin);
+        fileStream?.Read(bytes, 0, BlockSize);
+        return ActualBlock.FromBytes(bytes);
+    }
+
+    public void WriteBlock(long address, Block<T> block)
+    {
+        fileStream.Seek(address, SeekOrigin.Begin);
+        fileStream.Write(block.GetBytes(), 0, BlockSize);
+        fileStream.Flush();
+    }
+
+    public long AllocateNewEmptyBlock()
+    {
+        fileStream.Seek(0, SeekOrigin.End);
+        long addr = fileStream.Position;
+
+        var b = new Block<T>(BlockSize, BlockingFactor);
+        fileStream.Write(b.GetBytes(), 0, BlockSize);
+        fileStream.Flush();
+
+        LastBlockAdress = addr;
+        return addr;
+    }
+
+    public long GetBlockAddressByIndex(int index)
+    {
+        return (long)index * BlockSize;
+    }
+
+    public void MarkBlockAsFree(long address)
+    {
+        if (!fullyClearBlocks.Contains(address))
+            fullyClearBlocks.Add(address);
     }
 
     public (string allBlocks, string partlyClearBlocks, string fullyClearBlocks) GetAllBlocksAsString()
@@ -243,23 +287,23 @@ public class BHeapFile<T> where T : IData<T>, new()
         {
             Seek(actualAdress);
             ChangeActualBlockByActualPosition();
-            long blockNumber = actualAdress / blockSize;
+            long blockNumber = actualAdress / BlockSize;
             sbAllBlocks.AppendLine("-----BLOCK " + blockNumber + " -----");
             sbAllBlocks.AppendLine("Adress: " + actualAdress);
-            sbAllBlocks.AppendLine("Valid count: " + actualBlock.ValidCount);
+            sbAllBlocks.AppendLine("Valid count: " + ActualBlock.ValidCount);
 
-            if (actualBlock.ValidCount == 0)
+            if (ActualBlock.ValidCount == 0)
             {
                 sbAllBlocks.AppendLine("EMPTY BLOCK");
             }
             else
             {
-                for (int i = 0; i < actualBlock.ValidCount; i++)
-                    sbAllBlocks.AppendLine((i + 1) + ") " + actualBlock.BlockData[i].GetPrintString());
+                for (int i = 0; i < ActualBlock.ValidCount; i++)
+                    sbAllBlocks.AppendLine((i + 1) + ") " + ActualBlock.BlockData[i].GetPrintString());
             }
 
             sbAllBlocks.AppendLine("---------------------------------------");
-            actualAdress += blockSize;
+            actualAdress += BlockSize;
         }
 
         var sbPCB = new StringBuilder().AppendLine("Partly clear blocks adresses:");
