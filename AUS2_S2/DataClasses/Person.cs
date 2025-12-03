@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace AUS2_S2.HeapFile.DataClasses;
+namespace AUS2_S2.DataClasses;
 
 public class Person : IData<Person>
 {

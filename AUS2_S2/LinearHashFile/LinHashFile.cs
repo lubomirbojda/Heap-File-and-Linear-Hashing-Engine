@@ -1,11 +1,13 @@
-using AUS2_S2.HeapFile;
+﻿using AUS2_S2.DataClasses;
+using AUS2_S2.LinearHashFile.MainHF;
+using AUS2_S2.LinearHashFile.OverflowHF;
 
 namespace AUS2_S2.LinearHashFile;
 
 public class LinHashFile<T> where T : IData<T>, new()
 {
-    private readonly BHeapFile<T> mainFile;
-    private readonly BHeapFile<T> overflowFile;
+    private readonly MainHeapFile<T> mainFile;
+    private readonly OverflowHeapFile<T> overflowFile;
 
     private readonly int baseBucketCount;
     private int level;
@@ -82,6 +84,8 @@ public class LinHashFile<T> where T : IData<T>, new()
                 overflowBlock.BlockData[overflowBlock.ValidCount] = data;
                 overflowBlock.IncrementValidCount();
                 overflowFile.WriteBlock(currentAddress, overflowBlock);
+                mainBlock.OverflowValidRecordsCount++;
+                mainFile.WriteBlock(address, mainBlock);
                 return;
             }
 
@@ -102,7 +106,7 @@ public class LinHashFile<T> where T : IData<T>, new()
             newAddr = overflowFile.AllocateNewEmptyBlock();
         }
 
-        Block<T> newBlock = new Block<T>(overflowFile.BlockSize, overflowFile.BlockingFactor);
+        var newBlock = new OverflowHFBlock<T>(overflowFile.BlockSize, overflowFile.BlockingFactor);
         newBlock.BlockData[0] = data;
         newBlock.IncrementValidCount();
         overflowFile.WriteBlock(newAddr, newBlock);
@@ -110,15 +114,18 @@ public class LinHashFile<T> where T : IData<T>, new()
         //set overflow address to correct block
         if (prevAddress == -1)
         {
-            mainBlock.OverflowAddress = newAddr;
-            mainFile.WriteBlock(address, mainBlock);
+            mainBlock.OverflowAddress = newAddr;      
         }
         else
         {
-            Block<T> prev = overflowFile.ReadBlock(prevAddress);
+            OverflowHFBlock<T> prev = overflowFile.ReadBlock(prevAddress);
             prev.OverflowAddress = newAddr;
             overflowFile.WriteBlock(prevAddress, prev);
         }
+
+        mainBlock.OverflowValidRecordsCount++;
+        mainBlock.OverflowBlocksCount++;
+        mainFile.WriteBlock(address, mainBlock);
     }
 
     private void Split()
@@ -196,7 +203,7 @@ public class LinHashFile<T> where T : IData<T>, new()
         long addr = GetBucketAddress(bucket);
 
         //check main file
-        Block<T> main = mainFile.ReadBlock(addr);
+        var main = mainFile.ReadBlock(addr);
         for (int i = 0; i < main.ValidCount; i++)
         {
             if (main.BlockData[i].Equals(dummy))
@@ -207,7 +214,7 @@ public class LinHashFile<T> where T : IData<T>, new()
         long overflowAddr = main.OverflowAddress;
         while (overflowAddr >= 0)
         {
-            Block<T> ob = overflowFile.ReadBlock(overflowAddr);
+            var ob = overflowFile.ReadBlock(overflowAddr);
             for (int i = 0; i < ob.ValidCount; i++)
             {
                 if (ob.BlockData[i].Equals(dummy))
@@ -266,6 +273,7 @@ public class LinHashFile<T> where T : IData<T>, new()
                         overflowBLock.BlockData[j - 1] = overflowBLock.BlockData[j];
 
                     overflowBLock.DecrementValidCount();
+                    mainBlock.OverflowValidRecordsCount--;
 
                     //if block becomes empty - mark as free and fix addresses
                     if (overflowBLock.ValidCount == 0)
@@ -273,12 +281,14 @@ public class LinHashFile<T> where T : IData<T>, new()
                         if (prevAddress == -1)
                         {
                             mainBlock.OverflowAddress = overflowBLock.OverflowAddress;
-                            mainFile.WriteBlock(address, mainBlock);
+                            //mainFile.WriteBlock(address, mainBlock);
                         }
                         else
                         {
                             var prev = overflowFile.ReadBlock(prevAddress);
                             prev.OverflowAddress = overflowBLock.OverflowAddress;
+                            mainBlock.OverflowBlocksCount--;
+                            //mainFile.WriteBlock(address, mainBlock);
                             overflowFile.WriteBlock(prevAddress, prev);
                         }
 
@@ -291,6 +301,8 @@ public class LinHashFile<T> where T : IData<T>, new()
                         //just write changed overflow block back
                         overflowFile.WriteBlock(currentAddress, overflowBLock);
                     }
+
+                    mainFile.WriteBlock(address, mainBlock);
 
                     return true;
                 }
@@ -327,7 +339,7 @@ public class LinHashFile<T> where T : IData<T>, new()
             bucketToMerge = (baseBucketCount << (level - 1)) - 1;
             level--;
             splitPointer = (baseBucketCount << level) - 1;
-        }        
+        }
 
         var deleteBucketAddress = mainFile.GetBlockAddressByIndex(bucketToRemove);
         var list = ReadAndClearBucket(deleteBucketAddress);

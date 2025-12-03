@@ -1,5 +1,5 @@
+using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile;
-using AUS2_S2.HeapFile.DataClasses;
 using AUS2_S2.LinearHashFile;
 
 namespace AUS2_S2;
@@ -104,7 +104,7 @@ public class Tester
             Console.WriteLine("Doing operation number: " + i);
 
             //insert
-            if (operation < 0.4)
+            if (operation < 0.55)
             {
                 var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
                 int charsName = rand.Next(2, 14);
@@ -114,7 +114,7 @@ public class Tester
                 lhfile.Insert(randPerson);
             }
             //get
-            else if (operation < 0.6)
+            else if (operation < 0.65)
             {
                 if (list.Count > 0)
                 {

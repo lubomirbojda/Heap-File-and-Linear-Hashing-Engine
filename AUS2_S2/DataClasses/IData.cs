@@ -1,4 +1,4 @@
-namespace AUS2_S2.HeapFile;
+namespace AUS2_S2.DataClasses;
 
 public interface IData<T>
 {

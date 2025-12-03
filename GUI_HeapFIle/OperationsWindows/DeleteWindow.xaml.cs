@@ -1,5 +1,5 @@
+using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile;
-using AUS2_S2.HeapFile.DataClasses;
 using System.Windows;
 
 namespace GUI_HeapFIle.OperationsWindows
