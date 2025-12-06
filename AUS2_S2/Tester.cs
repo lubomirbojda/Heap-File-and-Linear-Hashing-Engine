@@ -94,9 +94,9 @@ public class Tester
         var path = Environment.CurrentDirectory;
         var mainPath = Path.Combine(path, "mainLHF");
         var overPath = Path.Combine(path, "overLHF");
-        Random rand = new();
+        Random rand = new(500);
         List<Person> list = [];
-        var lhfile = new LinHashFile<Person>(576, mainPath, 576, overPath, 2);
+        var lhfile = new LinHashFile<Person>(215, mainPath, 850, overPath, 2, Path.Combine(path, "LHFmetadata"));
 
         for (int i = 0; i < numberOfOperation; i++)
         {
@@ -164,5 +164,7 @@ public class Tester
         }
 
         Console.WriteLine("Linear has file test successful.");
+        Console.WriteLine("Splits: " + lhfile.splitsCOunt);
+        Console.WriteLine("Merges: " + lhfile.mergersCount);
     }
 }

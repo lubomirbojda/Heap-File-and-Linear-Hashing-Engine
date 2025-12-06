@@ -1,4 +1,4 @@
-﻿using AUS2_S2.DataClasses;
+using AUS2_S2.DataClasses;
 using AUS2_S2.LinearHashFile.MainHF;
 using AUS2_S2.LinearHashFile.OverflowHF;
 
@@ -9,24 +9,69 @@ public class LinHashFile<T> where T : IData<T>, new()
     private readonly MainHeapFile<T> mainFile;
     private readonly OverflowHeapFile<T> overflowFile;
 
-    private readonly int baseBucketCount;
+    private int baseBucketCount;
     private int level;
     private int splitPointer;
 
     private int validRecordsCountAll;
 
-    public LinHashFile(int mainFileBlockSize, string mainFilePath, int overflowFileBlockSize, string overflowFilePath, int initialBucketCount)
+    public int mergersCount = 0;
+    public int splitsCOunt = 0;
+
+    private readonly FileStream metadataStream;
+
+    private string AddMetadataExtension(string filePath) => filePath + ".metadata";
+
+    public LinHashFile(int mainFileBlockSize, string mainFilePath, int overflowFileBlockSize, string overflowFilePath, 
+        int initialBucketCount, string metadataPath)
     {
-        mainFile = new(mainFileBlockSize, mainFilePath, mainFilePath + ".metadata");
-        overflowFile = new(overflowFileBlockSize, overflowFilePath, overflowFilePath + ".metadata");
+        mainFile = new(mainFileBlockSize, mainFilePath, AddMetadataExtension(mainFilePath));
+        overflowFile = new(overflowFileBlockSize, overflowFilePath, AddMetadataExtension(overflowFilePath));
+        if (File.Exists(metadataPath))
+            File.Delete(metadataPath);
+        metadataStream = new(metadataPath, FileMode.Create, FileAccess.ReadWrite);
 
         baseBucketCount = initialBucketCount;
         level = 0;
         splitPointer = 0;
         validRecordsCountAll = 0;
 
+        MainHFBlock<T> mainBlock = new(mainFile.BlockSize, mainFile.BlockingFactor);
         for (int i = 0; i < baseBucketCount; i++)
-            mainFile.AllocateNewEmptyBlock();
+            mainFile.WriteBlockAtEnd(mainBlock);
+    }
+
+    public LinHashFile(string mainFilePath, string overflowFilePath, string metadataPath)
+    {
+        mainFile = new(mainFilePath, AddMetadataExtension(mainFilePath));
+        overflowFile = new(overflowFilePath, AddMetadataExtension(overflowFilePath));
+        metadataStream = new(metadataPath, FileMode.Open, FileAccess.ReadWrite);
+        LoadMetadata();
+    }
+
+    private void LoadMetadata()
+    {
+        using var br = new BinaryReader(metadataStream);
+        baseBucketCount = br.ReadInt32();
+        level = br.ReadInt32();
+        splitPointer = br.ReadInt32();
+        validRecordsCountAll = br.ReadInt32();
+    }
+
+    private void SaveMetadata()
+    {
+        using var bw = new BinaryWriter(metadataStream);
+        bw.Write(baseBucketCount);
+        bw.Write(level);
+        bw.Write(splitPointer);
+        bw.Write(validRecordsCountAll);
+    }
+
+    public void Close()
+    {
+        mainFile.Close();
+        overflowFile.Close();
+        SaveMetadata();
     }
 
     private int Hash0(int hashCode) => Math.Abs(hashCode % (baseBucketCount << level));
@@ -52,7 +97,11 @@ public class LinHashFile<T> where T : IData<T>, new()
         validRecordsCountAll++;
 
         while (ShouldSplit())
+        {
             Split();
+            splitsCOunt++;
+        }
+            
     }
 
     private void InsertIntoBucket(int bucket, T data)
@@ -94,17 +143,7 @@ public class LinHashFile<T> where T : IData<T>, new()
         }
 
         //have to create new block in overflow file and insert there
-        long newAddr;
-
-        if (overflowFile.fullyClearBlocks.Count > 0)
-        {
-            newAddr = overflowFile.fullyClearBlocks[0];
-            overflowFile.fullyClearBlocks.RemoveAt(0);
-        }
-        else
-        {
-            newAddr = overflowFile.AllocateNewEmptyBlock();
-        }
+        long newAddr = overflowFile.GetNextClearBlockAddress();
 
         var newBlock = new OverflowHFBlock<T>(overflowFile.BlockSize, overflowFile.BlockingFactor);
         newBlock.BlockData[0] = data;
@@ -130,17 +169,111 @@ public class LinHashFile<T> where T : IData<T>, new()
 
     private void Split()
     {
-        mainFile.AllocateNewEmptyBlock();
-        long splitAddress = GetBucketAddress(splitPointer);
+        var (records, mainBlock, overflowBlocksAndAddresses) = ReadBucket(splitPointer);
 
-        List<T> all = ReadAndClearBucket(splitAddress);
+        mainBlock.ResetBlock();
+        foreach (var (block, _) in overflowBlocksAndAddresses)
+            block.ResetBlock();
 
-        foreach (var d in all)
+        List<T> recordsToMove = [];
+        List<T> recordsToStay = [];
+
+        foreach (var rec in records)
         {
-            int newIndex = Hash1(d.GetHashCode());
-            InsertIntoBucket(newIndex, d);
+            var hashCode = rec.GetHashCode();
+            if (Hash1(hashCode) == splitPointer)
+                recordsToStay.Add(rec);
+            else
+                recordsToMove.Add(rec);
         }
 
+
+        //preparing blocks with staying records
+        int index = 0;
+        OverflowHFBlock<T>? helpBlock = null;
+        foreach (var rec in recordsToStay)
+        {
+            if (mainBlock.ValidCount < mainBlock.BlockData.Length)
+            {
+                mainBlock.BlockData[mainBlock.ValidCount] = rec;
+                mainBlock.IncrementValidCount();
+                continue;
+            }
+
+            if (helpBlock == null || helpBlock.ValidCount == helpBlock.BlockData.Length)
+            {
+                var prevBlock = helpBlock;
+                (helpBlock, var address) = overflowBlocksAndAddresses[index];
+                if (index == 0)
+                    mainBlock.OverflowAddress = address;
+                else
+                {
+                    if (prevBlock != null)
+                        prevBlock.OverflowAddress = address;
+                }
+                index++;
+            }
+
+            helpBlock.BlockData[helpBlock.ValidCount] = rec;
+            helpBlock.IncrementValidCount();
+            mainBlock.OverflowValidRecordsCount++;
+        }
+
+
+        mainBlock.OverflowBlocksCount = (mainBlock.OverflowValidRecordsCount + overflowFile.BlockingFactor - 1) / overflowFile.BlockingFactor;
+
+        for (int i = overflowBlocksAndAddresses.Count - 1; i >= index; i--)
+        {
+            overflowFile.MarkBlockAsFree(overflowBlocksAndAddresses[i].address);
+            overflowBlocksAndAddresses.RemoveAt(i);
+        }
+
+        //preparing new blocks for moving records
+        MainHFBlock<T> newMainBlock = new(mainFile.BlockSize, mainFile.BlockingFactor);
+        List<(OverflowHFBlock<T> block, long address)> newOverflowBlocksAndAddresses = [];
+        OverflowHFBlock<T>? actualOverflowBlock = null;
+
+        foreach (var rec in recordsToMove)
+        {
+            if (newMainBlock.ValidCount < newMainBlock.BlockData.Length)
+            {
+                newMainBlock.BlockData[newMainBlock.ValidCount] = rec;
+                newMainBlock.IncrementValidCount();
+                continue;
+            }
+
+            if (actualOverflowBlock == null || actualOverflowBlock.ValidCount == actualOverflowBlock.BlockData.Length)
+            {
+                actualOverflowBlock = new(overflowFile.BlockSize, overflowFile.BlockingFactor);
+                var newAddress = overflowFile.GetNextClearBlockAddress();
+                newOverflowBlocksAndAddresses.Add((actualOverflowBlock, newAddress));
+                if (newOverflowBlocksAndAddresses.Count == 1)
+                    newMainBlock.OverflowAddress = newAddress;
+                else
+                    actualOverflowBlock.OverflowAddress = newAddress;
+            }
+
+            actualOverflowBlock.BlockData[actualOverflowBlock.ValidCount] = rec;
+            actualOverflowBlock.IncrementValidCount();
+            newMainBlock.OverflowValidRecordsCount++;
+        }
+
+        newMainBlock.OverflowBlocksCount = (newMainBlock.OverflowValidRecordsCount + overflowFile.BlockingFactor - 1) / overflowFile.BlockingFactor;
+
+        overflowFile.RemoveAllEmptyBlocksFromEnd();
+
+        //write all new blocks
+        var mainBlockAddress = GetBucketAddress(splitPointer);
+        mainFile.WriteBlock(mainBlockAddress, mainBlock);
+        foreach (var (block, address) in overflowBlocksAndAddresses)
+            overflowFile.WriteBlock(address, block);
+
+        var newMainBlockAddress = mainFile.GetNextClearBlockAddress();
+        mainFile.WriteBlock(newMainBlockAddress, newMainBlock);
+        foreach (var (block, address) in newOverflowBlocksAndAddresses)
+            overflowFile.WriteBlock(address, block);
+
+        //setting new splitpointer after split
         splitPointer++;
         if (splitPointer == (baseBucketCount << level))
         {
@@ -149,8 +282,38 @@ public class LinHashFile<T> where T : IData<T>, new()
         }
     }
 
-    private List<T> ReadAndClearBucket(long address)
+    private (List<T>, 
+        MainHFBlock<T>, 
+        List<(OverflowHFBlock<T> block, long address)>)
+    ReadBucket(int bucket)
     {
+        var mainBlockAddress = GetBucketAddress(bucket);
+        List<T> records = [];
+        List<(OverflowHFBlock<T>, long address)> overflowBlocksAndAddresses = [];
+        MainHFBlock<T> mainBlock = mainFile.ReadBlock(mainBlockAddress);
+
+        for (int i = 0; i < mainBlock.ValidCount; i++)
+            records.Add(mainBlock.BlockData[i]);
+
+        long overflowAddr = mainBlock.OverflowAddress;
+
+        while (overflowAddr >= 0)
+        {
+            var overflowBlock = overflowFile.ReadBlock(overflowAddr);
+            overflowBlocksAndAddresses.Add((overflowBlock, overflowAddr));
+
+            for (int i = 0; i < overflowBlock.ValidCount; i++)
+                records.Add(overflowBlock.BlockData[i]);
+
+            overflowAddr = overflowBlock.OverflowAddress;
+        }
+
+        return (records, mainBlock, overflowBlocksAndAddresses);
+    }
+
+    private List<T> ReadAndClearBucket(int bucket)
+    {
+        var address = GetBucketAddress(bucket);
         List<T> list = [];
 
         var mainBlock = mainFile.ReadBlock(address);
@@ -173,14 +336,10 @@ public class LinHashFile<T> where T : IData<T>, new()
             long next = overflowBlock.OverflowAddress;
 
             overflowBlock.ResetBlock();
-            overflowFile.WriteBlock(overflowAddr, overflowBlock);
-
             overflowFile.MarkBlockAsFree(overflowAddr);
 
             overflowAddr = next;
         }
-
-        overflowFile.RemoveAllEmptyBlocksFromEnd();
 
         return list;
     }
@@ -226,6 +385,48 @@ public class LinHashFile<T> where T : IData<T>, new()
         return default;
     }
 
+    public bool Update(T newData)
+    {
+        int bucket = Hash(newData);
+        long address = GetBucketAddress(bucket);
+
+        //check main block
+        var mainBlock = mainFile.ReadBlock(address);
+
+        for (int i = 0; i < mainBlock.ValidCount; i++)
+        {
+            if (mainBlock.BlockData[i].Equals(newData))
+            {
+                mainBlock.BlockData[i] = newData;
+                mainFile.WriteBlock(address, mainBlock);
+                return true;
+            }
+        }
+
+        //check overflow blocks
+        long overflowAddress = mainBlock.OverflowAddress;
+
+        while (overflowAddress >= 0)
+        {
+            var overflowBlock = overflowFile.ReadBlock(overflowAddress);
+
+            for (int i = 0; i < overflowBlock.ValidCount; i++)
+            {
+                if (overflowBlock.BlockData[i].Equals(newData))
+                {
+                    overflowBlock.BlockData[i] = newData;
+                    overflowFile.WriteBlock(overflowAddress, overflowBlock);
+                    return true;
+                }
+            }
+
+            overflowAddress = overflowBlock.OverflowAddress;
+        }
+
+        return false;
+    }
+
+
     public bool Delete(T dummy)
     {
         int bucket = Hash(dummy);
@@ -236,7 +437,11 @@ public class LinHashFile<T> where T : IData<T>, new()
 
         validRecordsCountAll--;
         while (ShouldMerge())
+        {
             Merge();
+            mergersCount++;
+        }
+            
 
         return true;
     }
@@ -341,14 +546,66 @@ public class LinHashFile<T> where T : IData<T>, new()
             splitPointer = (baseBucketCount << level) - 1;
         }
 
-        var deleteBucketAddress = mainFile.GetBlockAddressByIndex(bucketToRemove);
-        var list = ReadAndClearBucket(deleteBucketAddress);
+        var listMergingRecords = ReadAndClearBucket(bucketToRemove);
 
-        foreach (var record in list)
+        //prepare all blocks to write
+        var (_, mainBlock, overflowBlocksAndAddresses) = ReadBucket(bucketToMerge);
+        List<(OverflowHFBlock<T> block, long address)> newOverflowBlocksAndAddresses = [];
+
+        OverflowHFBlock<T>? helpBlock = null;
+        int index = -1;
+        foreach (var rec in listMergingRecords)
         {
-            InsertIntoBucket(bucketToMerge, record);
+            if (mainBlock.ValidCount < mainBlock.BlockData.Length)
+            {
+                mainBlock.BlockData[mainBlock.ValidCount] = rec;
+                mainBlock.IncrementValidCount();
+                continue;
+            }
+
+            if (helpBlock == null || helpBlock.ValidCount == helpBlock.BlockData.Length)
+            {
+                while (true)
+                {
+                    if (++index < overflowBlocksAndAddresses.Count)
+                    {
+                        (helpBlock, var address) = overflowBlocksAndAddresses[index];
+                        if (helpBlock.ValidCount < helpBlock.BlockData.Length)
+                        {
+                            newOverflowBlocksAndAddresses.Add((helpBlock, address));
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        var address = overflowFile.GetNextClearBlockAddress();
+                        if (helpBlock == null)
+                            mainBlock.OverflowAddress = address;
+                        else
+                            helpBlock.OverflowAddress = address;
+
+                        helpBlock = new(overflowFile.BlockSize, overflowFile.BlockingFactor);
+                        newOverflowBlocksAndAddresses.Add((helpBlock, address));
+                        break;
+                    }
+                } 
+            }
+
+            helpBlock.BlockData[helpBlock.ValidCount] = rec;
+            helpBlock.IncrementValidCount();
+            mainBlock.OverflowValidRecordsCount++;
         }
 
+        mainBlock.OverflowBlocksCount = (mainBlock.OverflowValidRecordsCount + overflowFile.BlockingFactor - 1) / overflowFile.BlockingFactor;
+
+        //write all blocks
+        var mainBlockAddress = GetBucketAddress(bucketToMerge);
+        mainFile.WriteBlock(mainBlockAddress, mainBlock);
+        foreach (var (block, address) in newOverflowBlocksAndAddresses)
+            overflowFile.WriteBlock(address, block);
+
+
+        overflowFile.RemoveAllEmptyBlocksFromEnd();
         mainFile.RemoveLastBlock();
     }
 }

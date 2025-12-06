@@ -1,4 +1,4 @@
-﻿using AUS2_S2.DataClasses;
+using AUS2_S2.DataClasses;
 using System.Text;
 
 namespace AUS2_S2.HeapFile.Base;
@@ -211,10 +211,7 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             SetNewFileSize(adressForNewFileSize);
     }
 
-    public void Seek(long adress)
-    {
-        fileStream.Seek(adress, SeekOrigin.Begin);
-    }
+    private void Seek(long adress) => fileStream.Seek(adress, SeekOrigin.Begin);
 
     private void SetNewFileSize(long newEndAdress)
     {
@@ -231,19 +228,14 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         metadataStream.Close();
     }
 
-    public void ChangeActualBlockByActualPosition()
+    private void ChangeActualBlockByActualPosition()
     {
         var bytes = new byte[BlockSize];
         fileStream?.Read(bytes, 0, ActualBlock.GetSize());
         ActualBlock = (BlockT)ActualBlock.FromBytes(bytes);
     }
 
-    public void WriteActualBlockAtPosition(long address)
-    {
-        Seek(address);
-        fileStream.Write(ActualBlock.GetBytes(), 0, BlockSize);
-        fileStream.Flush();
-    }
+    private void WriteActualBlockAtPosition(long address) => WriteBlock(address, ActualBlock);
 
     public BlockT ReadBlock(long address)
     {
@@ -255,24 +247,38 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
 
     public void WriteBlock(long address, BlockT block)
     {
-        fileStream.Seek(address, SeekOrigin.Begin);
+        Seek(address);
         fileStream.Write(block.GetBytes(), 0, BlockSize);
         fileStream.Flush();
     }
 
-    public long AllocateNewEmptyBlock()
+    public void WriteBlockAtEnd(BlockT block)
     {
         fileStream.Seek(0, SeekOrigin.End);
         long addr = fileStream.Position;
 
-        var b = CreateBlock(BlockSize, BlockingFactor);
-        fileStream.Write(b.GetBytes(), 0, BlockSize);
+        fileStream.Write(block.GetBytes(), 0, BlockSize);
         fileStream.Flush();
 
-        fullyClearBlocks.Remove(addr);
-
         LastBlockAdress = addr;
-        return addr;
+    }
+
+    public long GetNextClearBlockAddress()
+    {
+        long address;
+        if (fullyClearBlocks.Count > 0)
+        {
+            fullyClearBlocks.Sort();
+            address = fullyClearBlocks[0];
+            fullyClearBlocks.RemoveAt(0);
+        }
+        else
+        {
+            address = LastBlockAdress + BlockSize;
+            LastBlockAdress += BlockSize;
+        }
+
+        return address;
     }
 
     public long GetBlockAddressByIndex(int index)
@@ -311,11 +317,6 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             long blockNumber = actualAdress / BlockSize;
             sbAllBlocks.AppendLine("-----BLOCK " + blockNumber + " -----");
             sbAllBlocks.AppendLine("Adress: " + actualAdress);
-
-            //if (ActualBlock.OverflowAddress >= 0)
-            //    sbAllBlocks.AppendLine("Overflow address: " + ActualBlock.OverflowAddress);
-            //else
-            //    sbAllBlocks.AppendLine("Overflow address: none");
 
             sbAllBlocks.AppendLine("Valid count: " + ActualBlock.ValidCount);
 

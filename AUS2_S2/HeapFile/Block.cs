@@ -1,4 +1,4 @@
-﻿using AUS2_S2.DataClasses;
+using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile.Base;
 
 namespace AUS2_S2.HeapFile;

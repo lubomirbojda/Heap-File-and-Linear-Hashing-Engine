@@ -1,4 +1,4 @@
-﻿using AUS2_S2.DataClasses;
+using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile.Base;
 
 namespace AUS2_S2.LinearHashFile.MainHF;
@@ -15,7 +15,7 @@ public class MainHeapFile<T> : BaseHeapFile<T, MainHFBlock<T>> where T : IData<T
 
     protected override MainHFBlock<T> CreateBlock(int blockSize, int blockingFactor)
     {
-        return new(blockSize, blockingFactor);
+        return new MainHFBlock<T>(blockSize, blockingFactor);
     }
 
 }

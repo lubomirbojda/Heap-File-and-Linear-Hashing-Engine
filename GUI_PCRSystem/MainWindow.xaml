@@ -1,0 +1,47 @@
+<Window x:Class="GUI_PCRSystem.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GUI_PCRSystem"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Header="Open"/>
+                <MenuItem Header="Save as..."/>
+                <MenuItem Header="Generate"/>
+                <MenuItem Header="Quit" />
+            </MenuItem>
+        </Menu>
+
+        <TextBlock Grid.Row="1" Text="Operation:" FontSize="15" FontWeight="DemiBold" Margin="5"/>
+
+        <Button IsEnabled="True" Grid.Row="2" Content="Choose operation" HorizontalAlignment="Left" Width="180" Height="30" Margin="10" Click="ChooseOperation_Click">
+            <Button.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="01 - Insert PCR test"/>
+                    <MenuItem Header="02 - Find person and its tests" Click="FindPersonAndTests_Click"/>
+                    <MenuItem Header="03 - Find PCRTest and its person"/>
+                    <MenuItem Header="04 - Insert person"/>
+                    <MenuItem Header="05 - Delete PCR test"/>
+                    <MenuItem Header="06 - Delete person"/>
+                    <MenuItem Header="07 - Find person to edit"/>
+                    <MenuItem Header="08 - Find PCR test to edit"/>
+                </ContextMenu>
+            </Button.ContextMenu>
+        </Button>
+
+
+        <ContentControl x:Name="ChangableContent" Grid.Row="4"/>
+    </Grid>
+</Window>
