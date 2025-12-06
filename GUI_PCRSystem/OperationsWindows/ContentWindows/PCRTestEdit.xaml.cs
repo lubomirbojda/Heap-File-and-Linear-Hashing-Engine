@@ -44,9 +44,9 @@ namespace GUI_PCRSystem.OperationsWindows.ContentWindows
                         NoteTextBox.Text
                     ));
                 if (result)
-                    MessageBox.Show("Person updated.", "Success", MessageBoxButton.OK);
+                    MessageBox.Show("PCR test updated.", "Success", MessageBoxButton.OK);
                 else
-                    MessageBox.Show("Person not updated.", "Failed", MessageBoxButton.OK);
+                    MessageBox.Show("PCR test not updated.", "Failed", MessageBoxButton.OK);
             }
         }
     }

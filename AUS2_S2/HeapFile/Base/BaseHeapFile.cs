@@ -50,7 +50,8 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
 
     private void LoadMetadata()
     {
-        using var br = new BinaryReader(metadataStream);
+        metadataStream.Position = 0;
+        using var br = new BinaryReader(metadataStream, Encoding.Default, leaveOpen: true);
         LastBlockAdress = br.ReadInt64();
         BlockingFactor = br.ReadInt32();
         BlockSize = br.ReadInt32();
@@ -66,7 +67,10 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
 
     private void SaveMetadata()
     {
-        using var bw = new BinaryWriter(metadataStream);
+        metadataStream.Position = 0;
+        metadataStream.SetLength(0);
+
+        using var bw = new BinaryWriter(metadataStream, Encoding.Default, leaveOpen: true);
         //long
         bw.Write(LastBlockAdress);
         //int
@@ -231,7 +235,7 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
     private void ChangeActualBlockByActualPosition()
     {
         var bytes = new byte[BlockSize];
-        fileStream?.Read(bytes, 0, ActualBlock.GetSize());
+        fileStream?.Read(bytes, 0, BlockSize);
         ActualBlock = (BlockT)ActualBlock.FromBytes(bytes);
     }
 
@@ -274,8 +278,17 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         }
         else
         {
-            address = LastBlockAdress + BlockSize;
-            LastBlockAdress += BlockSize;
+            if (LastBlockAdress < 0)
+            {
+                address = 0;
+                LastBlockAdress = address;
+            }
+            else
+            {
+                address = LastBlockAdress + BlockSize;
+                LastBlockAdress += BlockSize;
+            }
+            
         }
 
         return address;
@@ -304,12 +317,10 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         }
     }
 
-    public (string allBlocks, string partlyClearBlocks, string fullyClearBlocks) GetAllBlocksAsString()
+    public string GetAllBlocksAsString()
     {
         var sbAllBlocks = new StringBuilder();
         long actualAdress = 0;
-        partlyClearBlocks.Sort();
-        fullyClearBlocks.Sort();
         while (actualAdress < fileStream.Length)
         {
             Seek(actualAdress);
@@ -334,13 +345,6 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             actualAdress += BlockSize;
         }
 
-        var sbPCB = new StringBuilder().AppendLine("Partly clear blocks adresses:");
-        var sbFCB = new StringBuilder().AppendLine("Fully clear blocks adresses:");
-        foreach (var adress in partlyClearBlocks)
-            sbPCB.AppendLine(adress.ToString());
-        foreach (var adress in fullyClearBlocks)
-            sbFCB.AppendLine(adress.ToString());
-
-        return (sbAllBlocks.ToString(), sbPCB.ToString(), sbFCB.ToString());
+        return sbAllBlocks.ToString();
     }
 }

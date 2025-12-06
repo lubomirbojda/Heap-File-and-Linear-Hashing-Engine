@@ -22,7 +22,6 @@ namespace GUI_PCRSystem.OperationsWindows
                 if (person != null)
                 {
                     mainW.personEdit.SetNewResult(person);
-                    mainW.personEdit.SetPersonID(person.Id);
                     mainW.ChangableContent.Content = mainW.personEdit.Content;
                 }
                 else

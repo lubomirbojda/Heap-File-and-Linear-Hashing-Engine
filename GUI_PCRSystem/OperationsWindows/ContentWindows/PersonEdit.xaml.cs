@@ -10,20 +10,16 @@ namespace GUI_PCRSystem.OperationsWindows.ContentWindows
     public partial class PersonEdit : Window
     {
         private readonly MainWindow mainW;
-        private string personID = "";
+        private Person? person;
         public PersonEdit(MainWindow mainWindow)
         {
             InitializeComponent();
             mainW = mainWindow;
         }
 
-        public void SetPersonID(string id)
+        public void SetNewResult(Person personToEdit)
         {
-            personID = id;
-        }
-
-        public void SetNewResult(Person person)
-        {
+            person = personToEdit;
             FirstNameTextBox.Text = person.FirstName;
             LastNameTextBox.Text = person.LastName;
             DatePicker.SelectedDate = person.BirthDate.ToDateTime(TimeOnly.MinValue);
@@ -31,14 +27,12 @@ namespace GUI_PCRSystem.OperationsWindows.ContentWindows
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (mainW.guiController != null)
+            if (mainW.guiController != null && person != null)
             {
-                var result = mainW.guiController.UpdatePerson(new Person(
-                    FirstNameTextBox.Text,
-                    LastNameTextBox.Text,
-                    DateOnly.FromDateTime(DatePicker.SelectedDate ?? default),
-                    personID
-                ));
+                person.SetNewFirstName(FirstNameTextBox.Text);
+                person.SetNewLastName(LastNameTextBox.Text);
+                person.SetNewBirthdate(DateOnly.FromDateTime(DatePicker.SelectedDate ?? default));
+                var result = mainW.guiController.UpdatePerson(person);
                 if (result)
                     MessageBox.Show("Person updated.", "Success", MessageBoxButton.OK);
                 else

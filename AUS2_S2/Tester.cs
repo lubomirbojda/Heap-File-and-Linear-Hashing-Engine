@@ -96,7 +96,7 @@ public class Tester
         var overPath = Path.Combine(path, "overLHF");
         Random rand = new(500);
         List<Person> list = [];
-        var lhfile = new LinHashFile<Person>(215, mainPath, 850, overPath, 2, Path.Combine(path, "LHFmetadata"));
+        var lhfile = new LinHashFile<Person>(576, mainPath, 850, overPath, 2, Path.Combine(path, "LHFmetadata"));
 
         for (int i = 0; i < numberOfOperation; i++)
         {
@@ -104,7 +104,7 @@ public class Tester
             Console.WriteLine("Doing operation number: " + i);
 
             //insert
-            if (operation < 0.55)
+            if (operation < 0.4)
             {
                 var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
                 int charsName = rand.Next(2, 14);
@@ -114,7 +114,7 @@ public class Tester
                 lhfile.Insert(randPerson);
             }
             //get
-            else if (operation < 0.65)
+            else if (operation < 0.6)
             {
                 if (list.Count > 0)
                 {

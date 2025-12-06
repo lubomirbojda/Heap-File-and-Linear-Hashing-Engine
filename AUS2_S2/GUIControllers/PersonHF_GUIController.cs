@@ -1,6 +1,5 @@
 using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile;
-using System.Collections.Generic;
 
 namespace AUS2_S2.GUIControllers
 {
@@ -20,7 +19,7 @@ namespace AUS2_S2.GUIControllers
 
         public void CloseFile() => _heapFile.Close();
 
-        public (string allBlocks, string partlyClearBlocks, string fullyClearBlocks) GetAllBlocks() => _heapFile.GetAllBlocksAsString();
+        public string GetAllBlocks() => _heapFile.GetAllBlocksAsString();
 
         public void GenerateDataForHeapFile()
         {

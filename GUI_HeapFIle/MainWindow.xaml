@@ -45,23 +45,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBox Grid.Row="0"
-                         IsReadOnly="True"
-                         TextWrapping="NoWrap"
-                         VerticalScrollBarVisibility="Auto"
-                         HorizontalScrollBarVisibility="Auto"
-                         Margin="10"
-                         Width="150"
-                         x:Name="TextBoxPartlyClearBlocks"/>
-
-                <TextBox Grid.Row="1"
-                         IsReadOnly="True"
-                         TextWrapping="NoWrap"
-                         VerticalScrollBarVisibility="Auto"
-                         HorizontalScrollBarVisibility="Auto"
-                         Margin="10"
-                         Width="150"
-                         x:Name="TextBoxFullyClearBlocks"/>
+                
 
             </Grid>
         </Grid>

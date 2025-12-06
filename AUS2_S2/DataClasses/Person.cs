@@ -7,13 +7,13 @@ public class Person : IData<Person>
     private const int ID_MAX_CHARS = 10;
     private const int MAX_TESTS = 6;
 
-    private readonly string firstName;
-    private readonly string lastName;
-    private readonly DateOnly birthDate;
+    private string firstName;
+    private string lastName;
+    private DateOnly birthDate;
     private readonly string id;
 
-    private readonly int firstNameValidChars;
-    private readonly int lastNameValidChars;
+    private int firstNameValidChars;
+    private int lastNameValidChars;
     private readonly int idValidChars;
 
     public int[] TestsCodes { get; private set; } = new int[MAX_TESTS];
@@ -39,6 +39,23 @@ public class Person : IData<Person>
     public Person() : this(string.Empty, string.Empty, default, string.Empty) { }
     public Person(string id) : this(string.Empty, string.Empty, default, id) { }
 
+    public void SetNewFirstName(string newFirstName)
+    {
+        firstName = newFirstName;
+        firstNameValidChars = Math.Min(firstName.Length, FIRST_NAME_MAX_CHARS);
+    }
+
+    public void SetNewLastName(string newLastName)
+    {
+        lastName = newLastName;
+        lastNameValidChars = Math.Min(lastName.Length, LAST_NAME_MAX_CHARS);
+    }
+
+    public void SetNewBirthdate(DateOnly newBirthdate)
+    {
+        birthDate = newBirthdate;
+    }
+
     public bool Equals(Person other)
     {
         return id.Equals(other.id);
@@ -48,21 +65,19 @@ public class Person : IData<Person>
     {
         int offset = 0;
 
-        //first name
+        //strings valid chars
         var firstNameCount = BitConverter.ToInt32(dataBytes, offset);
         offset += sizeof(int);
-        var firstName = ConvertBytesToString(dataBytes, offset, firstNameCount);
-        offset += FIRST_NAME_MAX_CHARS * sizeof(char);
-
-        //last name
         var lastNameCount = BitConverter.ToInt32(dataBytes, offset);
         offset += sizeof(int);
-        var lastName = ConvertBytesToString(dataBytes, offset, lastNameCount);
-        offset += LAST_NAME_MAX_CHARS * sizeof(char);
-
-        //id
         var idCount = BitConverter.ToInt32(dataBytes, offset);
         offset += sizeof(int);
+
+        //strings
+        var firstName = ConvertBytesToString(dataBytes, offset, firstNameCount);
+        offset += FIRST_NAME_MAX_CHARS * sizeof(char);     
+        var lastName = ConvertBytesToString(dataBytes, offset, lastNameCount);
+        offset += LAST_NAME_MAX_CHARS * sizeof(char);
         var id = ConvertBytesToString(dataBytes, offset, idCount);
         offset += ID_MAX_CHARS * sizeof(char);
 

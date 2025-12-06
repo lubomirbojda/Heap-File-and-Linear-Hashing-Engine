@@ -52,7 +52,7 @@ public abstract class BaseBlock<T> where T : IData<T>, new()
                 : new byte[recordSize];
 
             recBytes.CopyTo(bytes, offset);
-            offset += recordSize;
+            offset += recBytes.Length;
         }
 
         return bytes;

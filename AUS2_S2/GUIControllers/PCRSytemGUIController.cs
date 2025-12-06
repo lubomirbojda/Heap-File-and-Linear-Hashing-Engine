@@ -17,9 +17,9 @@ public class PCRSytemGUIController
             Path.Combine(dir, "personsOverflow"), personsInitialBlocksCount, Path.Combine(dir, "personsLHF.metadata"));
 
         LinHashFile<PCRTest> pcrTestsLHF = new(pcrTestsFileMainBlockSize, Path.Combine(dir, "pcrTestsMain"), pcrTestsFileOverflowBlockSize,
-            Path.Combine(dir, "pcrTestsOverflow"), pcrTestsInitialBlocksCount, Path.Combine(dir, "pcrTestsLHF.metada"));
+            Path.Combine(dir, "pcrTestsOverflow"), pcrTestsInitialBlocksCount, Path.Combine(dir, "pcrTestsLHF.metadata"));
 
-        system = new(personsLHF, pcrTestsLHF);
+        system = new(personsLHF, pcrTestsLHF, Path.Combine(dir, "pcrsystem.metadata"));
     }
 
     public PCRSytemGUIController(string systemFilePath)
@@ -31,10 +31,12 @@ public class PCRSytemGUIController
 
         LinHashFile<PCRTest> pcrTestsLHF = new(Path.Combine(dir, "pcrTestsMain"),
             Path.Combine(dir, "pcrTestsOverflow"),
-            Path.Combine(dir, "pcrTestsLHF.metada"));
+            Path.Combine(dir, "pcrTestsLHF.metadata"));
 
-        system = new(personsLHF, pcrTestsLHF);
+        system = new(personsLHF, pcrTestsLHF, Path.Combine(dir, "pcrsystem.metadata"), true);
     }
+
+    public void Close() => system.Close();
 
     public (bool result, string message) InsertPCRTest(DateTime datetime, string personID, bool result, double value, string note)
         => system.InsertPCRTest(datetime, personID, result, value, note);
@@ -65,4 +67,11 @@ public class PCRSytemGUIController
 
     public bool UpdatePCRTest(PCRTest editedTest)
         => system.UpdatePCRTest(editedTest);
+
+    public void Generate() => system.GenerateData();
+
+    public string GetPrintPersonsMainFile() => system.GetPrintPersonsMainFile();
+    public string GetPrintPersonsOverflowFile() => system.GetPrintPersonsOverflowFile();
+    public string GetPrintPCRTestsMainFile() => system.GetPrintPCRTestsMainFile();
+    public string GetPrintPCRTestsOverflowFile() => system.GetPrintPCRTestsOverflowFile();
 }

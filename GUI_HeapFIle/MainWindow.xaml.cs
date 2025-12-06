@@ -33,9 +33,7 @@ namespace GUI_HeapFIle
 
         private void PrintFile()
         {
-            TextBoxHeapFile.Text = guiController?.GetAllBlocks().allBlocks;
-            TextBoxPartlyClearBlocks.Text = guiController?.GetAllBlocks().partlyClearBlocks;
-            TextBoxFullyClearBlocks.Text = guiController?.GetAllBlocks().fullyClearBlocks;
+            TextBoxHeapFile.Text = guiController?.GetAllBlocks();
         }
 
         private void InsertButton_Click(object sender, RoutedEventArgs e)

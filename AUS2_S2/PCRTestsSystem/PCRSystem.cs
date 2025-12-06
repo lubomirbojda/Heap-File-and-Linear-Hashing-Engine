@@ -1,5 +1,6 @@
 using AUS2_S2.DataClasses;
 using AUS2_S2.LinearHashFile;
+using System.Reflection.Emit;
 using System.Text;
 
 namespace AUS2_S2.PCRTestsSystem;
@@ -13,12 +14,43 @@ public class PCRSystem
 
     private const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    public PCRSystem(LinHashFile<Person> personsLHF, LinHashFile<PCRTest> pcrTestsLHF)
+    private readonly FileStream metadataStream;
+
+    public PCRSystem(LinHashFile<Person> personsLHF, LinHashFile<PCRTest> pcrTestsLHF, string metadataPath, bool open = false)
     {
         this.personsLHF = personsLHF;
         this.pcrTestsLHF = pcrTestsLHF;
-        idSequence = 0;
-        testsCodesSequence = 0;
+        if (open)
+        {
+            this.personsLHF = personsLHF;
+            this.pcrTestsLHF = pcrTestsLHF;
+            metadataStream = new(metadataPath, FileMode.Open, FileAccess.ReadWrite);
+            LoadMetadata();
+        }
+        else
+        {
+            idSequence = 0;
+            testsCodesSequence = 0;
+            metadataStream = new(metadataPath, FileMode.Create, FileAccess.ReadWrite);
+        }
+        
+    }
+
+    private void LoadMetadata()
+    {
+        metadataStream.Position = 0;
+        using var br = new BinaryReader(metadataStream, Encoding.Default, leaveOpen: true);
+        idSequence = br.ReadInt32();
+        testsCodesSequence = br.ReadInt32();
+    }
+
+    private void SaveMetadata()
+    {
+        metadataStream.Position = 0;
+        metadataStream.SetLength(0);
+        using var bw = new BinaryWriter(metadataStream, Encoding.Default, leaveOpen: true);
+        bw.Write(idSequence);
+        bw.Write(testsCodesSequence);
     }
 
     private string GenerateUniquePersonID()
@@ -36,6 +68,14 @@ public class PCRSystem
             sb.Append(chars[index]);
         }
         return sb.ToString();
+    }
+
+    public void Close()
+    {
+        personsLHF.Close();
+        pcrTestsLHF.Close();
+        SaveMetadata();
+        metadataStream.Close();
     }
 
     //Operations
@@ -76,7 +116,7 @@ public class PCRSystem
             var pcrtest = new PCRTest(foundPerson.TestsCodes[i]);
             var foundTest = pcrTestsLHF.Get(pcrtest);
             if (foundTest != null)
-                tests.Add(pcrtest);
+                tests.Add(foundTest);
         }
 
         return (foundPerson, tests);
@@ -104,7 +144,7 @@ public class PCRSystem
         var newPersonID = GenerateUniquePersonID();
         Person person = new(firstName, lastName, birthDate, newPersonID);
         personsLHF.Insert(person);
-        return "New person ID: " + newPersonID;
+        return newPersonID;
     }
 
     //05 - Delete PCR test
@@ -127,7 +167,8 @@ public class PCRSystem
             var dummyTest = new PCRTest(foundPerson.TestsCodes[i]);
             pcrTestsLHF.Delete(dummyTest);
         }
-            
+
+        personsLHF.Delete(dummyPerson);
         return true;
     }
 
@@ -149,4 +190,45 @@ public class PCRSystem
     public bool UpdatePerson(Person editedPerson) => personsLHF.Update(editedPerson);
 
     public bool UpdatePCRTest(PCRTest editedTest) => pcrTestsLHF.Update(editedTest);
+
+
+    //Generate data for system
+    public void GenerateData()
+    {
+        var numberOfPersons = 2000;
+        var numberOfTests = 5000;
+        Random rand = new();
+        List<Person> listPersons = [];
+
+        for (int i = 0; i < numberOfPersons; i++)
+        {
+
+            var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
+            int charsName = rand.Next(2, 14);
+            int charsLastName = rand.Next(2, 13);
+            //var randPerson = new Person(Tester.GetRandomString(charsName, rand), Tester.GetRandomString(charsLastName, rand), birthdate,
+            //    Tester.GetRandomString(8, rand));
+            var id = InsertPerson(Tester.GetRandomString(charsName, rand), Tester.GetRandomString(charsLastName, rand), birthdate);
+            listPersons.Add(new Person(id));
+        }
+
+        for (int i = 0; i < numberOfTests; i++)
+        {
+            var randIndex = rand.Next(0, listPersons.Count);
+            var person = listPersons[randIndex];
+            double totalSeconds = (DateTime.Now - DateTime.Now.AddYears(-2)).TotalSeconds;
+            double randomSeconds = rand.NextDouble() * totalSeconds;
+            var testTime = DateTime.Now.AddSeconds(randomSeconds);
+            var result = rand.NextDouble() < 0.5;
+            double value = rand.NextDouble() * 10;
+            int noteLength = rand.Next(0, 5);
+            var note = Tester.GetRandomString(noteLength, rand);
+            InsertPCRTest(testTime, person.Id, result, value, note);
+        }
+    }
+
+    public string GetPrintPersonsMainFile() => personsLHF.GetPrintMainFile();
+    public string GetPrintPersonsOverflowFile() => personsLHF.GetPrintOverflowFile();
+    public string GetPrintPCRTestsMainFile() => pcrTestsLHF.GetPrintMainFile();
+    public string GetPrintPCRTestsOverflowFile() => pcrTestsLHF.GetPrintOverflowFile();
 }

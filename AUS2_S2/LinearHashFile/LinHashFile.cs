@@ -1,6 +1,7 @@
 using AUS2_S2.DataClasses;
 using AUS2_S2.LinearHashFile.MainHF;
 using AUS2_S2.LinearHashFile.OverflowHF;
+using System.Text;
 
 namespace AUS2_S2.LinearHashFile;
 
@@ -20,13 +21,13 @@ public class LinHashFile<T> where T : IData<T>, new()
 
     private readonly FileStream metadataStream;
 
-    private string AddMetadataExtension(string filePath) => filePath + ".metadata";
+    private static string AddMetadataExtension(string filePath) => filePath + ".metadata";
 
     public LinHashFile(int mainFileBlockSize, string mainFilePath, int overflowFileBlockSize, string overflowFilePath, 
         int initialBucketCount, string metadataPath)
     {
-        mainFile = new(mainFileBlockSize, mainFilePath, AddMetadataExtension(mainFilePath));
-        overflowFile = new(overflowFileBlockSize, overflowFilePath, AddMetadataExtension(overflowFilePath));
+        mainFile = new(mainFileBlockSize, mainFilePath, LinHashFile<T>.AddMetadataExtension(mainFilePath));
+        overflowFile = new(overflowFileBlockSize, overflowFilePath, LinHashFile<T>.AddMetadataExtension(overflowFilePath));
         if (File.Exists(metadataPath))
             File.Delete(metadataPath);
         metadataStream = new(metadataPath, FileMode.Create, FileAccess.ReadWrite);
@@ -51,7 +52,8 @@ public class LinHashFile<T> where T : IData<T>, new()
 
     private void LoadMetadata()
     {
-        using var br = new BinaryReader(metadataStream);
+        metadataStream.Position = 0;
+        using var br = new BinaryReader(metadataStream, Encoding.Default, leaveOpen: true);
         baseBucketCount = br.ReadInt32();
         level = br.ReadInt32();
         splitPointer = br.ReadInt32();
@@ -60,7 +62,9 @@ public class LinHashFile<T> where T : IData<T>, new()
 
     private void SaveMetadata()
     {
-        using var bw = new BinaryWriter(metadataStream);
+        metadataStream.Position = 0;
+        metadataStream.SetLength(0);
+        using var bw = new BinaryWriter(metadataStream, Encoding.Default, leaveOpen: true);
         bw.Write(baseBucketCount);
         bw.Write(level);
         bw.Write(splitPointer);
@@ -72,6 +76,7 @@ public class LinHashFile<T> where T : IData<T>, new()
         mainFile.Close();
         overflowFile.Close();
         SaveMetadata();
+        metadataStream.Close();
     }
 
     private int Hash0(int hashCode) => Math.Abs(hashCode % (baseBucketCount << level));
@@ -608,4 +613,8 @@ public class LinHashFile<T> where T : IData<T>, new()
         overflowFile.RemoveAllEmptyBlocksFromEnd();
         mainFile.RemoveLastBlock();
     }
+
+    public string GetPrintMainFile() => mainFile.GetAllBlocksAsString();
+
+    public string GetPrintOverflowFile() => overflowFile.GetAllBlocksAsString();
 }

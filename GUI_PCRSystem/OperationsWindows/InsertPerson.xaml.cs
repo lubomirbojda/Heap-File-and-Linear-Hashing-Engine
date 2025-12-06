@@ -18,13 +18,13 @@ namespace GUI_PCRSystem.OperationsWindows
         {
             if (mainW.guiController != null)
             {
-                var message = mainW.guiController.InsertPerson(
+                var id = mainW.guiController.InsertPerson(
                     FirstNameTextBox.Text,
                     LastNameTextBox.Text,
                     DateOnly.FromDateTime(DatePicker.SelectedDate ?? default)
                     );
 
-                MessageBox.Show(message, "Person insertion", MessageBoxButton.OK);
+                MessageBox.Show("Inserted person id: " + id, "Person insertion", MessageBoxButton.OK);
             }
             Close();
         }

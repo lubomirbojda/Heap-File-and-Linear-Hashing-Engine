@@ -12,37 +12,62 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Menu Grid.Row="0">
             <MenuItem Header="File">
                 <MenuItem Header="New" Click="NewMenuItem_Click"/>
-                <MenuItem Header="Open"/>
-                <MenuItem Header="Close opened file"/>
-                <MenuItem Header="Generate"/>
-                <MenuItem Header="Quit" />
+                <MenuItem Header="Open" Click="OpenMenuItem_Click"/>
+                <MenuItem Header="Close and save opened file" Click="SaveAndCloseMenuItem_Click"/>
+                <MenuItem Header="Generate" Click="GenerateMenuItem_Click"/>
+                <MenuItem Header="Quit" Click="QuitMenuItem_Click"/>
             </MenuItem>
         </Menu>
 
-        <TextBlock Grid.Row="1" Text="Operation:" FontSize="15" FontWeight="DemiBold" Margin="5"/>
+        <TextBlock Grid.Row="1" Text="Print file:" FontSize="15" FontWeight="DemiBold" Margin="5"/>
 
-        <Button IsEnabled="True" Grid.Row="2" Content="Choose operation" HorizontalAlignment="Left" Width="180" Height="30" Margin="10" Click="ChooseOperation_Click">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" IsEnabled="False" Content="Persons main file" HorizontalAlignment="Left"
+                    Width="180" Height="20" Margin="5" Click="PrintPersonsMainFileButton_Click" x:Name="PersonsMainFileButton"/>
+            <Button Grid.Column="1" IsEnabled="False" Content="Persons overflow file" HorizontalAlignment="Left"
+                    Width="180" Height="20" Margin="5" Click="PrintPersonsOverflowFileButton_Click" x:Name="PersonsOverflowFileButton"/>
+            <Button Grid.Column="2" IsEnabled="False" Content="PCR tests main file" HorizontalAlignment="Left"
+                    Width="180" Height="20" Margin="5" Click="PrintPCRTestsMainFileButton_Click" x:Name="PCRTestsMainFileButton"/>
+            <Button Grid.Column="3" IsEnabled="False" Content="PCR tests overflow file" HorizontalAlignment="Left"
+                    Width="180" Height="20" Margin="5" Click="PrintPCRTestsMOverflowFileButton_Click" x:Name="PCRTestsMOverflowFileButton"/>
+        </Grid>
+        
+        <TextBlock Grid.Row="4" Text="Operation:" FontSize="15" FontWeight="DemiBold" Margin="5"/>
+
+        <Button IsEnabled="False" Grid.Row="5" Content="Choose operation" HorizontalAlignment="Left" Width="180" Height="30" Margin="10" 
+                Click="ChooseOperation_Click" x:Name="OperationsButton">
             <Button.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="01 - Insert PCR test"/>
+                    <MenuItem Header="01 - Insert PCR test" Click="InsertPCRTest_Click"/>
                     <MenuItem Header="02 - Find person and its tests" Click="FindPersonAndTests_Click"/>
-                    <MenuItem Header="03 - Find PCRTest and its person"/>
-                    <MenuItem Header="04 - Insert person"/>
-                    <MenuItem Header="05 - Delete PCR test"/>
-                    <MenuItem Header="06 - Delete person"/>
-                    <MenuItem Header="07 - Find person to edit"/>
-                    <MenuItem Header="08 - Find PCR test to edit"/>
+                    <MenuItem Header="03 - Find PCRTest and its person" Click="FindPCRTestAndPerson_Click"/>
+                    <MenuItem Header="04 - Insert person" Click="InsertPerson_Click"/>
+                    <MenuItem Header="05 - Delete PCR test" Click="DeletePCRTest_Click"/>
+                    <MenuItem Header="06 - Delete person" Click="DeletePerson_Click"/>
+                    <MenuItem Header="07 - Find person to edit" Click="FindPersonToEdit_Click"/>
+                    <MenuItem Header="08 - Find PCR test to edit" Click="FindPCRTestToEdit_Click"/>
                 </ContextMenu>
             </Button.ContextMenu>
         </Button>
 
 
-        <ContentControl x:Name="ChangableContent" Grid.Row="4"/>
+        <ContentControl x:Name="ChangableContent" Grid.Row="6"/>
     </Grid>
 </Window>
