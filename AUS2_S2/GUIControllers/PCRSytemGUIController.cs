@@ -45,7 +45,7 @@ public class PCRSytemGUIController
     public (PCRTest? test, Person? person) FindPCRTest(int testCode)
         => system.FindPCRTest(testCode);
 
-    public void InsertPerson(string firstName, string lastName, DateOnly birthDate)
+    public string InsertPerson(string firstName, string lastName, DateOnly birthDate)
         => system.InsertPerson(firstName, lastName, birthDate);
 
     public bool DeletePCRTest(int testCode)
@@ -60,9 +60,9 @@ public class PCRSytemGUIController
     public PCRTest? FindPCRTestToEdit(int testCode)
         => system.FindPCRTestToEdit(testCode);
 
-    public void UpdatePerson(Person editedPerson)
+    public bool UpdatePerson(Person editedPerson)
         => system.UpdatePerson(editedPerson);
 
-    public void UpdatePCRTest(PCRTest editedTest)
+    public bool UpdatePCRTest(PCRTest editedTest)
         => system.UpdatePCRTest(editedTest);
 }

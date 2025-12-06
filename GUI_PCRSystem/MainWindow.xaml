@@ -17,8 +17,9 @@
 
         <Menu Grid.Row="0">
             <MenuItem Header="File">
+                <MenuItem Header="New" Click="NewMenuItem_Click"/>
                 <MenuItem Header="Open"/>
-                <MenuItem Header="Save as..."/>
+                <MenuItem Header="Close opened file"/>
                 <MenuItem Header="Generate"/>
                 <MenuItem Header="Quit" />
             </MenuItem>

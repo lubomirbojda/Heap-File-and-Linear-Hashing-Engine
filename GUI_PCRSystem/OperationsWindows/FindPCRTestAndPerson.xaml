@@ -18,7 +18,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Test ID:" Margin="15"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Test code:" Margin="15"/>
         <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" Margin="5" x:Name="TestIDBox"/>
 
         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="10" HorizontalAlignment="Right">

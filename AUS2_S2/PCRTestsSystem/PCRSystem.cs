@@ -59,7 +59,7 @@ public class PCRSystem
 
         UpdatePerson(foundPerson);
 
-        return (true, "PCR test inseted successfully.");
+        return (true, "PCR test inserted successfully." + "\n" + "Test code: " + pcrTest.TestCode);
     }
 
     //02 - find person
@@ -99,11 +99,12 @@ public class PCRSystem
     }
 
     //04 - Insert person
-    public void InsertPerson(string firstName, string lastName, DateOnly birthDate)
+    public string InsertPerson(string firstName, string lastName, DateOnly birthDate)
     {
         var newPersonID = GenerateUniquePersonID();
         Person person = new(firstName, lastName, birthDate, newPersonID);
         personsLHF.Insert(person);
+        return "New person ID: " + newPersonID;
     }
 
     //05 - Delete PCR test
@@ -145,7 +146,7 @@ public class PCRSystem
     }
 
     //Update methods
-    public void UpdatePerson(Person editedPerson) => personsLHF.Update(editedPerson);
+    public bool UpdatePerson(Person editedPerson) => personsLHF.Update(editedPerson);
 
-    public void UpdatePCRTest(PCRTest editedTest) => pcrTestsLHF.Update(editedTest);
+    public bool UpdatePCRTest(PCRTest editedTest) => pcrTestsLHF.Update(editedTest);
 }

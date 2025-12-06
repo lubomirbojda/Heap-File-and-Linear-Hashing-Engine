@@ -1,0 +1,49 @@
+<Window x:Class="GUI_PCRSystem.OperationsWindows.InsertPCRTest"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GUI_PCRSystem.OperationsWindows"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="InsertPCRTest" Height="450" Width="400">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Date and time:" Margin="15"/>
+        <xctk:DateTimePicker Grid.Row="0" Grid.Column="1" x:Name="DateTimePicker" Margin="0,5,0,10"/>
+
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Person ID:" Margin="15"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Height="25" Margin="5" x:Name="PersonIDTextBox" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Result:" Margin="15"/>
+        <CheckBox Grid.Row="2" Grid.Column="1" Height="25" Margin="5" x:Name="ResultCheckBox" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Value:" Margin="15"/>
+        <xctk:DoubleUpDown Grid.Row="6" Grid.Column="1" Margin="5" x:Name="ValueBox"/>
+
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="Note:" Margin="15"/>
+        <TextBox Grid.Row="7" Grid.Column="1" Height="25" Margin="5" x:Name="NoteTextBox" VerticalContentAlignment="Center"/>
+
+
+
+        <Button Grid.Row="8" Grid.Column="1" Content="Cancel" Width="80" Height="25" HorizontalAlignment="Right" Margin="5" VerticalAlignment="Bottom" 
+        Click="CancelButton_Click"/>
+        <Button Grid.Row="8" Grid.Column="1" Content="Insert test" Width="80" Height="25" VerticalAlignment="Bottom" Margin="5" Click="InsertButton_Click"/>
+    </Grid>
+</Window>
