@@ -10,7 +10,7 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
     private long LastBlockAdress;
     private readonly FileStream fileStream;
     //private Block<T> ActualBlock;
-    private BlockT ActualBlock;
+    protected BlockT ActualBlock;
     private readonly T dummyT = new();
     private readonly List<long> partlyClearBlocks = [];
     public List<long> fullyClearBlocks { get; private set; } = [];
@@ -321,6 +321,9 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
     {
         var sbAllBlocks = new StringBuilder();
         long actualAdress = 0;
+
+        sbAllBlocks.AppendLine("Block size (B): " + BlockSize);
+        sbAllBlocks.AppendLine("Blocking factor: " + BlockingFactor);
         while (actualAdress < fileStream.Length)
         {
             Seek(actualAdress);
@@ -328,6 +331,8 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             long blockNumber = actualAdress / BlockSize;
             sbAllBlocks.AppendLine("-----BLOCK " + blockNumber + " -----");
             sbAllBlocks.AppendLine("Adress: " + actualAdress);
+
+            AppendLinesToBlocksString(sbAllBlocks);
 
             sbAllBlocks.AppendLine("Valid count: " + ActualBlock.ValidCount);
 
@@ -346,5 +351,9 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         }
 
         return sbAllBlocks.ToString();
+    }
+
+    protected virtual void AppendLinesToBlocksString(StringBuilder sb)
+    {
     }
 }

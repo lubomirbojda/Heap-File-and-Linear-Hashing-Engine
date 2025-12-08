@@ -1,5 +1,6 @@
-﻿using AUS2_S2.DataClasses;
+using AUS2_S2.DataClasses;
 using AUS2_S2.HeapFile.Base;
+using System.Text;
 
 namespace AUS2_S2.LinearHashFile.OverflowHF;
 
@@ -16,5 +17,20 @@ public class OverflowHeapFile<T> : BaseHeapFile<T, OverflowHFBlock<T>> where T :
     protected override OverflowHFBlock<T> CreateBlock(int blockSize, int blockingFactor)
     {
         return new OverflowHFBlock<T>(blockSize, blockingFactor);
+    }
+
+    protected override void AppendLinesToBlocksString(StringBuilder sb)
+    {
+        base.AppendLinesToBlocksString(sb);
+        if (ActualBlock.OverflowAddress != -1)
+        {
+            var overflowBlockNumber = ActualBlock.OverflowAddress / BlockSize;
+            sb.AppendLine("Overflow block: " + overflowBlockNumber + " (address: " + ActualBlock.OverflowAddress + ")");
+        }
+        else
+        {
+            sb.AppendLine("Overflow block: none");
+        }
+        
     }
 }
