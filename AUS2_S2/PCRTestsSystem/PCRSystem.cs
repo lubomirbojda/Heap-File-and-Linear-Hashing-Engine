@@ -211,8 +211,8 @@ public class PCRSystem
     //Generate data for system
     public void GenerateData()
     {
-        var numberOfPersons = 2000;
-        var numberOfTests = 5000;
+        var numberOfPersons = 50;
+        var numberOfTests = 100;
         Random rand = new();
         List<Person> listPersons = [];
 
@@ -222,8 +222,6 @@ public class PCRSystem
             var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
             int charsName = rand.Next(2, 14);
             int charsLastName = rand.Next(2, 13);
-            //var randPerson = new Person(Tester.GetRandomString(charsName, rand), Tester.GetRandomString(charsLastName, rand), birthdate,
-            //    Tester.GetRandomString(8, rand));
             var id = InsertPerson(Tester.GetRandomString(charsName, rand), Tester.GetRandomString(charsLastName, rand), birthdate);
             listPersons.Add(new Person(id));
         }

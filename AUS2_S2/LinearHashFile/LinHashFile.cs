@@ -101,7 +101,7 @@ public class LinHashFile<T> where T : IData<T>, new()
         int bucket = Hash(data);
         InsertIntoBucket(bucket, data);
 
-        while (ShouldSplit())
+        if (ShouldSplit())
         {
             Split();
         }

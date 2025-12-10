@@ -129,5 +129,5 @@ public class PCRTest : IData<PCRTest>
             ", Value: " + Value + ", Note: " + Note;
     }
 
-    public override int GetHashCode() => TestCode;
+    public override int GetHashCode() => TestCode % 2;
 }
