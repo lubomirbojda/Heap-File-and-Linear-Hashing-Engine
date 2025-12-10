@@ -151,7 +151,23 @@ public class PCRSystem
     public bool DeletePCRTest(int testCode)
     {
         var testDummy = new PCRTest(testCode);
-        return pcrTestsLHF.Delete(testDummy);
+        var testToDelete = pcrTestsLHF.Get(testDummy);
+        if (testToDelete == null)
+            return false;
+
+        var personWithTest = personsLHF.Get(new Person(testToDelete.PersonId));
+
+        if (personWithTest != null)
+        {
+            int index = Array.IndexOf(personWithTest.TestsCodes, testCode);
+            for (int i = index + 1; i < personWithTest.TestsCount; i++)
+                personWithTest.TestsCodes[i - 1] = personWithTest.TestsCodes[i];
+            personWithTest.TestsCount--;
+            personsLHF.Update(personWithTest);
+        }
+        pcrTestsLHF.Delete(testToDelete);
+
+        return true;
     }
 
     //06 - Delete person from system + tests

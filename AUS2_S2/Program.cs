@@ -7,6 +7,5 @@ public class Program
         Tester t = new();
         //t.TestHeapFile();
         t.TestLinHashFile();
-
     }
 }

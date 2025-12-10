@@ -9,7 +9,6 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
     public int BlockSize { get; private set; }
     private long LastBlockAdress;
     private readonly FileStream fileStream;
-    //private Block<T> ActualBlock;
     protected BlockT ActualBlock;
     private readonly T dummyT = new();
     private readonly List<long> partlyClearBlocks = [];
@@ -24,7 +23,6 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         var helpBlock = CreateBlock(0, 0);
         int availableBytes = dataBlockSize - helpBlock.GetManageInfoSize();
         BlockingFactor = (availableBytes >= dummyT.GetSize()) ? (availableBytes / dummyT.GetSize()) : throw new InvalidOperationException("Block is not big enough)");
-        //ActualBlock = new Block<T>(BlockSize, BlockingFactor);
         ActualBlock = CreateBlock(BlockSize, BlockingFactor);
 
         LastBlockAdress = -1;
@@ -104,12 +102,12 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             fullyClearBlocks.Remove(returningAddress);
             return returningAddress;
         }
-
-        fileStream.Seek(0, SeekOrigin.End);
+        
         LastBlockAdress = fileStream.Position;
         var newBlock = CreateBlock(BlockSize, BlockingFactor);
         newBlock.BlockData[0] = insertingData;
         newBlock.IncrementValidCount();
+        fileStream.Seek(0, SeekOrigin.End);
         fileStream.Write(newBlock.GetBytes(), 0, newBlock.GetSize());
         fileStream.Flush();
         if (BlockingFactor > 1)
@@ -158,30 +156,14 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             if (ActualBlock.ValidCount == 0)
             {
                 partlyClearBlocks.Remove(address);
-                if (address == LastBlockAdress)
-                {
-                    RemoveAllEmptyBlocksFromEnd();
-                    return true;
-                }
-                else
-                {
-                    fullyClearBlocks.Add(address);
-                }
+                fullyClearBlocks.Add(address);
             }
         }
         else
         {
             if (ActualBlock.ValidCount == 0)
             {
-                if (address == LastBlockAdress)
-                {
-                    RemoveAllEmptyBlocksFromEnd();
-                    return true;
-                }
-                else
-                {
-                    fullyClearBlocks.Add(address);
-                }
+                fullyClearBlocks.Add(address);
             }
             else
             {
@@ -190,6 +172,7 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
         }
 
         WriteActualBlockAtPosition(address);
+        RemoveAllEmptyBlocksFromEnd();
 
         return true;
     }
@@ -235,7 +218,7 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
     private void ChangeActualBlockByActualPosition()
     {
         var bytes = new byte[BlockSize];
-        fileStream?.Read(bytes, 0, BlockSize);
+        fileStream?.Read(bytes, 0, ActualBlock.GetSize());
         ActualBlock = (BlockT)ActualBlock.FromBytes(bytes);
     }
 

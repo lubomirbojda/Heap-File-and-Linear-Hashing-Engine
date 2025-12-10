@@ -24,6 +24,7 @@
                     <GridViewColumn Header="Last name" DisplayMemberBinding="{Binding LastName}" Width="150"/>
                     <GridViewColumn Header="Birthdate" DisplayMemberBinding="{Binding BirthDate}" Width="150"/>
                     <GridViewColumn Header="Person ID" DisplayMemberBinding="{Binding Id}" Width="150"/>
+                    <GridViewColumn Header="Tests count" DisplayMemberBinding="{Binding TestsCount}" Width="150"/>
                 </GridView>
             </ListView.View>
         </ListView>

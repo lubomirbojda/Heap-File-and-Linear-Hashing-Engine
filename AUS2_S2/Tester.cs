@@ -15,7 +15,7 @@ public class Tester
 
     public void TestHeapFile()
     {
-        var numberOfOperation = 10000;
+        var numberOfOperation = 100000;
         var path = Path.Combine(Environment.CurrentDirectory, "testingHF");
         Random rand = new();
         if (File.Exists(path))
@@ -25,9 +25,10 @@ public class Tester
 
         for (int i = 0; i < numberOfOperation; i++)
         {
+            Console.WriteLine("Operation number: " + i);
             var operation = rand.NextDouble();
             //insert
-            if (operation < 0.5)
+            if (operation < 0.4)
             {
                 var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
                 var randPerson = new Person(GetRandomString(7, rand), GetRandomString(5, rand), birthdate, GetRandomString(8, rand));
@@ -94,9 +95,9 @@ public class Tester
         var path = Environment.CurrentDirectory;
         var mainPath = Path.Combine(path, "mainLHF");
         var overPath = Path.Combine(path, "overLHF");
-        Random rand = new(500);
+        Random rand = new();
         List<Person> list = [];
-        var lhfile = new LinHashFile<Person>(576, mainPath, 850, overPath, 2, Path.Combine(path, "LHFmetadata"));
+        var lhfile = new LinHashFile<Person>(1055, mainPath, 780, overPath, 2, Path.Combine(path, "LHFmetadata"));
 
         for (int i = 0; i < numberOfOperation; i++)
         {
@@ -104,7 +105,7 @@ public class Tester
             Console.WriteLine("Doing operation number: " + i);
 
             //insert
-            if (operation < 0.4)
+            if (operation < 0.45)
             {
                 var birthdate = DateOnly.FromDateTime(DateTime.Now).AddDays(-rand.Next(1, 365)).AddMonths(-rand.Next(1, 12)).AddYears(-rand.Next(18, 50));
                 int charsName = rand.Next(2, 14);
@@ -164,7 +165,5 @@ public class Tester
         }
 
         Console.WriteLine("Linear has file test successful.");
-        Console.WriteLine("Splits: " + lhfile.splitsCOunt);
-        Console.WriteLine("Merges: " + lhfile.mergersCount);
     }
 }
