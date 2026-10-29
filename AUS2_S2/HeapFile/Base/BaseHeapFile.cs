@@ -103,11 +103,11 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             return returningAddress;
         }
         
+        fileStream.Seek(0, SeekOrigin.End);
         LastBlockAdress = fileStream.Position;
         var newBlock = CreateBlock(BlockSize, BlockingFactor);
         newBlock.BlockData[0] = insertingData;
         newBlock.IncrementValidCount();
-        fileStream.Seek(0, SeekOrigin.End);
         fileStream.Write(newBlock.GetBytes(), 0, newBlock.GetSize());
         fileStream.Flush();
         if (BlockingFactor > 1)
@@ -193,6 +193,9 @@ public abstract class BaseHeapFile<T, BlockT> where T : IData<T>, new() where Bl
             fullyClearBlocks.Remove(newAddress);
             newAddress -= BlockSize;
         }
+
+        if (newAddress < 0)
+            LastBlockAdress = -1;
 
         if (adressForNewFileSize != LastBlockAdress)
             SetNewFileSize(adressForNewFileSize);
