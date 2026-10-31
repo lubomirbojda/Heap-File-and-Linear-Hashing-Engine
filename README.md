@@ -217,6 +217,8 @@ Complete technical documentation (in Slovak) is included in the repository root:
   - Step-by-step analysis and exact disk I/O formulas for Heap File (`Insert`, `Get`, `Delete`) and Linear Hash File (`Insert`, `Split`, `Get`, `Update`, `Delete`, `Merge`, `Compact`)
   - Explanation of auxiliary linear lists used for free-block management and bucket reorganization
 
+> **Note:** PDF documentation is written in the **Slovak language**.
+
 ---
 
 ## Screenshots
